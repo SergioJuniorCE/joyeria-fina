@@ -33,7 +33,7 @@ La base hosteada no tiene productos. Carga el catálogo:
 
 ```sh
 bun scripts/seed.ts --target=https://frosted-signal-808252a92b.lakebed.app \
-  --image-base=https://<host-publico>/seed-assets
+  --image-base=https://raw.githubusercontent.com/SergioJuniorCE/joyeria-fina/master/seed-assets
 ```
 
 El `--image-base` es obligatorio en hosteado. Ver [images.md](images.md).

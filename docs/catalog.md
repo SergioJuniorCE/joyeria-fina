@@ -82,7 +82,7 @@ bun scripts/seed.ts --port=3001
 
 ```sh
 bun scripts/seed.ts --target=https://frosted-signal-808252a92b.lakebed.app \
-  --image-base=https://<host-publico>/seed-assets
+  --image-base=https://raw.githubusercontent.com/SergioJuniorCE/joyeria-fina/master/seed-assets
 ```
 
 `--image-base` es obligatorio en hosteado: Lakebed no acepta subidas del CLI. Detalles en [images.md](images.md).

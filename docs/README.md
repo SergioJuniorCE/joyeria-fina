@@ -11,7 +11,7 @@ Guías para operar el catálogo, las fotos y el deploy de Joyería Fina en Lakeb
 | Estado | Reclamado, no expira |
 | Proyecto local | `C:\Users\sergi\.t3\projects\joyeria-fina` |
 | Panel | Tienda → **Administrar** en el pie (no recargues `/admin` directo) |
-| Fotos | `https://raw.githubusercontent.com/SergioJuniorCE/joyeria-fina/master/seed-assets` (repo público, rama `master`) |
+| Fotos | `https://raw.githubusercontent.com/SergioJuniorCE/joyeria-fina/master/seed-assets` (el repo debe existir y ser público, rama `master`) |
 | Runtime | Lakebed `0.0.41`, base de datos API v1 |
 
 ## Guías
