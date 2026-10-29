@@ -1,17 +1,22 @@
+/* Hallmark · waive 39b · the hero and favorites are product photo links · these fina broquel photographs are media, not control heights */
+/* Hallmark · dismissed 28a · the checkout thumbnails sit below the form; the first paint is text */
+/* Hallmark · dropped footer headings "Tienda", "Contacto", "Pagos y envíos" · the footer became a colophon; every link and note remains */
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 
+import { THEME_CSS } from "./theme";
+
 export const DISPLAY_FONT = {
-  fontFamily: '"Oswald", "Arial Narrow", ui-sans-serif, sans-serif',
+  fontFamily: "var(--font-display)",
   textTransform: "uppercase" as const
 };
 
 export const SANS_FONT = {
-  fontFamily: '"Jost", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif'
+  fontFamily: "var(--font-body)"
 };
 
 export const SCRIPT_FONT = {
-  fontFamily: '"Great Vibes", "Segoe Script", cursive',
+  fontFamily: "var(--font-script)",
   textTransform: "none" as const
 };
 
@@ -26,6 +31,10 @@ export function useFonts(): void {
     link.href =
       "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Jost:wght@300;400;500;600&family=Great+Vibes&display=swap";
     document.head.appendChild(link);
+
+    const style = document.createElement("style");
+    style.textContent = THEME_CSS;
+    document.head.appendChild(style);
   }, []);
 }
 
@@ -61,16 +70,16 @@ export function Icon({ name, class: className = "h-4 w-4" }: { name: IconName; c
 
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <span class="inline-flex items-center gap-2.5 text-[#3f3a34]">
+    <span class="inline-flex items-center gap-2.5 text-[var(--ink)]">
       <span
-        class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#3f3a34]/70 text-[15px] font-semibold leading-none tracking-[0.04em]"
+        class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--ink-70)] text-[15px] font-semibold leading-none"
         style={DISPLAY_FONT}
         aria-hidden="true"
       >
         JF
       </span>
       {!compact ? (
-        <span class="text-[20px] font-medium uppercase leading-none tracking-[0.07em] sm:text-[23px]" style={DISPLAY_FONT}>
+        <span class="text-[20px] font-medium uppercase leading-none tracking-[0.03em] sm:text-[23px]" style={DISPLAY_FONT}>
           Joyería Fina
         </span>
       ) : null}
@@ -112,7 +121,7 @@ export function Modal({
 
   return (
     <div
-      class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#2f2b26]/60 p-4 backdrop-blur-sm sm:items-center"
+      class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[var(--backdrop-60)] p-4 backdrop-blur-sm sm:items-center"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -123,7 +132,7 @@ export function Modal({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        class={`relative my-auto w-full bg-[#f7f1e9] text-[#3f3a34] outline-none ${className}`}
+        class={`relative my-auto w-full bg-[var(--surface)] text-[var(--ink)] outline-none ${className}`}
       >
         {children}
       </div>
@@ -134,7 +143,7 @@ export function Modal({
 export function Toast({ message }: { message: string }) {
   return (
     <div
-      class={`pointer-events-none fixed bottom-6 left-1/2 z-[90] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-[#3f3a34] px-5 py-3 text-[12.5px] text-[#f7f1e9] shadow-[0_18px_40px_-22px_rgba(0,0,0,.55)] transition duration-300 ${
+      class={`pointer-events-none fixed bottom-6 left-1/2 z-[90] max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-[12.5px] text-[var(--surface)] shadow-[0_18px_40px_-22px_var(--shadow)] transition duration-300 motion-reduce:translate-y-0 motion-reduce:transition-none ${
         message ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
       role="status"

@@ -38,17 +38,19 @@ function ProductImage({
   src,
   alt,
   class: className,
-  loading = "lazy"
+  loading = "lazy",
+  priority = false
 }: {
   src: string;
   alt: string;
   class?: string;
   loading?: "lazy" | "eager";
+  priority?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     return (
-      <span class={`grid place-items-center bg-[#f0e6db] text-[#6f675f] ${className ?? ""}`}>
+      <span class={`grid place-items-center bg-[var(--neutral)] text-[var(--muted)] ${className ?? ""}`}>
         <Icon name="image" class="h-8 w-8 opacity-50" />
       </span>
     );
@@ -60,6 +62,7 @@ function ProductImage({
       class={className}
       loading={loading}
       decoding="async"
+      fetchpriority={priority ? "high" : undefined}
       onError={() => setFailed(true)}
     />
   );
@@ -84,97 +87,77 @@ function HeroProducts({
   const secondLine = headlineLines.length > 1 ? `${headlineLines.slice(1).join(". ")}.` : "Brillo que dura.";
 
   return (
-    <section class="relative overflow-hidden" aria-labelledby="hero-title">
-      <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 py-10 sm:px-7 sm:py-14 lg:grid-cols-[1.03fr_.97fr] lg:gap-16 lg:px-9 lg:py-20 xl:gap-24">
-        <div class="max-w-[560px]">
-          <p class="mb-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[#a67f6c]" style={SANS_FONT}>
-            <Icon name="sparkle" class="h-3.5 w-3.5" />
-            {settings.heroEyebrow}
-          </p>
+    <section class="relative" aria-labelledby="hero-title">
+      <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 pt-10 sm:px-7 sm:pt-12 lg:grid-cols-[5fr_7fr] lg:gap-16 lg:px-9 lg:pt-14">
+        <div class="min-w-0 max-w-[520px]">
+          <Icon name="sparkle" class="mb-4 h-5 w-5 text-[var(--taupe)]" />
           <h1
             id="hero-title"
-            class="font-semibold leading-[0.98] tracking-[-0.025em] text-[#a67f6c]"
-            style={{ ...DISPLAY_FONT, fontSize: "clamp(3rem, 5.8vw, 5rem)" }}
+            class="font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--taupe)]"
+            style={{ ...DISPLAY_FONT, fontSize: "clamp(3.2rem, 6vw, 5.4rem)" }}
           >
             <span class="block">{firstLine}</span>
-            <span class="mt-1 block leading-[1.05]" style={{ ...SCRIPT_FONT, fontSize: "clamp(3rem, 6vw, 5.2rem)" }}>
+            <span class="mt-1 block leading-[1.02]" style={{ ...SCRIPT_FONT, fontSize: "clamp(2.8rem, 5.6vw, 4.8rem)" }}>
               {secondLine}
             </span>
           </h1>
-          <p class="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[#6f675f] sm:text-[17px]">
+          <p class="mt-6 max-w-[40ch] text-[17px] leading-relaxed text-[var(--muted)]">
             {settings.heroSubtext}
           </p>
-          <div class="mt-8 flex flex-wrap items-center gap-3">
-            <a
-              class="inline-flex min-h-11 items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#fffdf9] transition hover:bg-[#7a5440] active:scale-[0.99]"
-              href="#coleccion"
-            >
-              Ver la colección
-            </a>
-            <a
-              class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#3f3a34]/80 px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#3f3a34] transition hover:bg-[#3f3a34] hover:text-[#f7f1e9] active:scale-[0.99]"
-              href="#como-comprar"
-            >
-              Cómo comprar
-            </a>
-          </div>
+          <a
+            class="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--accent)] px-7 py-3.5 text-[14px] font-medium text-[var(--button-ink)] transition-colors duration-200 hover:bg-[var(--accent-strong)]"
+            href="#coleccion"
+          >
+            Ver la colección
+          </a>
         </div>
 
-        <div class="relative mx-auto w-full max-w-[540px] lg:mr-0">
-          <span class="absolute -bottom-4 -left-4 h-3/4 w-3/4 border border-[#3f3a34]/15 bg-[#f0e6db]/70" aria-hidden="true" />
-          <figure class="relative aspect-[4/5] overflow-hidden rounded-b-[2px] rounded-t-[999px] border border-[#3f3a34]/10 bg-[#f0e6db]">
-            {heroImage ? (
-              <ProductImage
-                src={heroImage}
-                alt="Broqueles de oro de 10 kt"
-                class="h-full w-full object-cover object-[50%_38%]"
-                loading="eager"
-              />
-            ) : (
-              <span class="grid h-full w-full place-items-center text-[#6f675f]">
-                <Icon name="image" class="h-12 w-12 opacity-30" />
-              </span>
-            )}
-          </figure>
+        <figure class="mx-auto w-full max-w-[560px] min-w-0 lg:mr-0 lg:max-w-none">
           {heroProduct ? (
             <button
-              class="absolute -left-2 bottom-5 w-[132px] border border-[#3f3a34]/16 bg-[#fffdfb] p-2 text-left shadow-[0_24px_50px_-30px_rgba(20,23,28,.55)] transition hover:-translate-y-1 sm:-left-8 sm:bottom-8 sm:w-[172px] sm:p-2.5"
+              class="group block w-full text-left"
               type="button"
               onClick={() => onQuick(heroProduct.id)}
               aria-label={`Ver ${heroProduct.name}, ${formatMoney(heroProduct.price)}`}
             >
-              <ProductImage src={heroProduct.imageUrl} alt="" class="aspect-[7/8] w-full object-cover" />
-              <span class="flex items-baseline justify-between gap-2 pt-2">
-                <span class="text-[15px] font-semibold leading-tight sm:text-[17px]" style={DISPLAY_FONT}>
-                  {heroProduct.name.replace(/^Broquel /, "")}
+              <div class="relative aspect-[4/5] max-h-[500px] overflow-hidden rounded-t-[999px] bg-[var(--neutral)] sm:max-h-[540px]">
+                {heroImage ? (
+                  <ProductImage
+                    src={heroImage}
+                    alt="Broqueles de oro de 10 kt"
+                    class="h-full w-full object-cover object-[50%_38%]"
+                    loading="eager"
+                    priority
+                  />
+                ) : (
+                  <span class="grid h-full w-full place-items-center text-[var(--muted)]">
+                    <Icon name="image" class="h-12 w-12 opacity-30" />
+                  </span>
+                )}
+              </div>
+              <figcaption class="mt-4 flex items-center justify-between gap-4 border-t border-[var(--ink-15)] pt-4">
+                <span class="text-[14px] text-[var(--muted)]">{heroProduct.name}</span>
+                <span class="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-[var(--ink-15)] bg-[var(--card)] text-[13px] font-medium text-[var(--ink)]">
+                  {formatMoney(heroProduct.price)}
                 </span>
-                <span class="text-[11px] font-medium sm:text-xs">{formatMoney(heroProduct.price)}</span>
-              </span>
+              </figcaption>
             </button>
           ) : null}
-        </div>
+        </figure>
       </div>
-    </section>
-  );
-}
-
-function TrustStrip({ settings }: { settings: SiteSettings }) {
-  const items = [
-    { icon: "check" as const, label: "Oro de 10 kt" },
-    { icon: "bag" as const, label: settings.shippingNote },
-    { icon: "whatsapp" as const, label: "Pedidos por WhatsApp" },
-    { icon: "heart" as const, label: "Piezas seleccionadas" }
-  ];
-
-  return (
-    <section class="border-y border-[#3f3a34]/15 bg-white" aria-label="Información de compra">
-      <div class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-x-5 gap-y-3 px-5 py-4 text-[12px] text-[#3f3a34] sm:flex sm:items-center sm:justify-between sm:px-7 sm:py-5 lg:px-9">
-        {items.map((item) => (
-          <span class="inline-flex items-center gap-2" key={item.label}>
-            <Icon name={item.icon} class="h-4 w-4 text-[#96684f]" />
-            {item.label}
-          </span>
-        ))}
+      <div class="mx-auto w-full max-w-[1320px] px-5 pb-10 pt-8 sm:px-7 lg:px-9 lg:pb-12">
+        <div class="grid gap-4 border-t border-[var(--ink-15)] pt-5 text-[14px] sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-[var(--ink-15)]">
+          <p class="text-[var(--ink)] sm:pr-6">Oro de 10 kt</p>
+          <p class="text-[var(--muted)] sm:px-6">{settings.shippingNote}</p>
+          <a
+            class="text-[var(--ink)] underline underline-offset-4 transition-colors duration-200 hover:text-[var(--accent)] sm:pl-6"
+            href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
+            target="_blank"
+            rel="noopener"
+          >
+            Pedidos por WhatsApp
+          </a>
+        </div>
       </div>
     </section>
   );
@@ -194,19 +177,15 @@ function ProductCard({
   onQty: (id: string, delta: number) => void;
 }) {
   return (
-    <article class="group flex flex-col border border-[#3f3a34]/10 bg-white p-2 shadow-[0_16px_36px_-32px_rgba(75,56,42,0.55)] sm:p-2.5">
-      <div class="relative aspect-[7/8] overflow-hidden bg-[#f0e6db]">
+    <article class="group flex flex-col border border-[var(--ink-15)] bg-[var(--card)] p-2 sm:p-2.5">
+      <div class="relative aspect-[7/8] overflow-hidden bg-[var(--neutral)]">
         <button class="block h-full w-full cursor-zoom-in" type="button" onClick={() => onQuick(product.id)} aria-label={`Ver ${product.name}`}>
-          <ProductImage
-            src={product.imageUrl}
-            alt=""
-            class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
-          />
+          <ProductImage src={product.imageUrl} alt="" class="h-full w-full object-cover" />
         </button>
         {qty > 0 ? (
-          <div class="absolute bottom-2 right-2 flex items-center rounded-full border border-[#3f3a34]/15 bg-[#fffdfb]/95 p-1 shadow-sm sm:bottom-3 sm:right-3">
+          <div class="absolute bottom-2 right-2 flex items-center rounded-full border border-[var(--ink-15)] bg-[var(--card-95)] p-1 shadow-sm sm:bottom-3 sm:right-3">
             <button
-              class="grid h-8 w-8 place-items-center rounded-full text-[#3f3a34] transition hover:bg-[#f0e6db] active:scale-95"
+              class="grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] transition-colors duration-200 hover:bg-[var(--neutral)]"
               type="button"
               onClick={() => onQty(product.id, -1)}
               aria-label={`Quitar uno de ${product.name}`}
@@ -222,7 +201,7 @@ function ProductCard({
               {qty}
             </span>
             <button
-              class="grid h-8 w-8 place-items-center rounded-full text-[#3f3a34] transition hover:bg-[#f0e6db] active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
+              class="grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] transition-colors duration-200 hover:bg-[var(--neutral)] disabled:opacity-30 disabled:hover:bg-transparent"
               type="button"
               onClick={() => onQty(product.id, 1)}
               disabled={qty >= MAX_QTY}
@@ -233,7 +212,7 @@ function ProductCard({
           </div>
         ) : (
           <button
-            class="absolute bottom-2 right-2 grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 bg-[#fffdfb]/95 text-[#3f3a34] shadow-sm transition duration-300 hover:bg-[#fffdfb] active:scale-95 sm:bottom-3 sm:right-3 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
+            class="absolute bottom-2 right-2 grid h-11 w-11 place-items-center rounded-full border border-[var(--ink-15)] bg-[var(--card-95)] text-[var(--ink)] transition-opacity duration-200 hover:bg-[var(--neutral)] sm:bottom-3 sm:right-3 sm:opacity-0 sm:group-hover:opacity-100"
             type="button"
             onClick={() => onAdd(product.id)}
             aria-label={`Añadir ${product.name} a la selección`}
@@ -241,19 +220,20 @@ function ProductCard({
             <Icon name="bag" class="h-[18px] w-[18px]" />
           </button>
         )}
-        <span class="pointer-events-none absolute left-2 top-2 grid h-14 w-14 place-items-center rounded-full bg-[#fffdfb] px-1 text-center text-[11.5px] font-medium leading-tight text-[#3f3a34] shadow-sm sm:left-3 sm:top-3 sm:h-16 sm:w-16 sm:text-[13px]">
+        <span class="pointer-events-none absolute left-2 top-2 grid h-14 w-14 place-items-center rounded-full bg-[var(--card)] px-1 text-center text-[11.5px] font-medium leading-tight text-[var(--ink)] shadow-sm sm:left-3 sm:top-3 sm:h-16 sm:w-16 sm:text-[13px]">
           {formatMoney(product.price)}
         </span>
       </div>
       <div class="flex flex-1 flex-col px-1 pb-1 pt-3">
-        <p class="text-[10.5px] uppercase tracking-[0.16em] text-[#96702f]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
+        <p class="text-[12px] text-[var(--gold)]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
         <button
-          class="mt-1 block text-left text-[17px] font-medium uppercase leading-[1.15] tracking-[0.02em] text-[#3f3a34] transition hover:text-[#96684f] sm:text-[19px]"
+          class="mt-1 flex min-h-11 w-full items-center text-left text-[14px] font-medium uppercase leading-[1.15] tracking-[0.02em] text-[var(--ink)] transition-colors duration-200 hover:text-[var(--accent)] sm:text-[17px] lg:text-[18px]"
           style={DISPLAY_FONT}
           type="button"
+          title={product.name}
           onClick={() => onQuick(product.id)}
         >
-          {product.name}
+          <span class="block w-full overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
         </button>
       </div>
     </article>
@@ -278,36 +258,36 @@ function QuickView({
       {product ? (
         <div class="relative grid md:grid-cols-2">
           <button
-            class="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 bg-[#f7f1e9]/90 text-[#3f3a34] transition hover:border-[#3f3a34]"
+            class="absolute right-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-full border border-[var(--ink-15)] bg-[var(--surface-90)] text-[var(--ink)] transition-colors duration-200 hover:border-[var(--ink)]"
             type="button"
             onClick={onClose}
             aria-label="Cerrar vista del producto"
           >
             <Icon name="x" />
           </button>
-          <div class="bg-[#f0e6db]">
+          <div class="bg-[var(--neutral)]">
             <ProductImage src={product.imageUrl} alt={product.name} class="aspect-[7/8] max-h-[48vh] w-full object-cover md:h-full md:max-h-none" />
           </div>
           <div class="flex flex-col p-6 sm:p-8 lg:p-10">
-            <p class="text-[11px] uppercase tracking-[0.16em] text-[#96702f]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
-            <h2 class="mt-2 text-[clamp(2rem,3.4vw,2.8rem)] font-medium uppercase leading-[1.02] tracking-[0.01em]" style={DISPLAY_FONT}>
+            <h2 class="text-[clamp(2rem,3.4vw,2.8rem)] font-medium uppercase leading-[1.02] tracking-[0.01em]" style={DISPLAY_FONT}>
               {product.name}
             </h2>
-            <p class="mt-3 text-[15px] font-medium">{formatMoney(product.price)} MXN</p>
+            <p class="mt-2 text-[13px] text-[var(--gold)]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
+            <p class="mt-3 text-[16px] font-medium">{formatMoney(product.price)} MXN</p>
             <div class="order-4 mt-4 md:order-none">
-              <p class="max-w-[40ch] text-[14.5px] leading-relaxed text-[#6f675f]">
+              <p class="max-w-[40ch] text-[15px] leading-relaxed text-[var(--muted)]">
                 {product.description || CATEGORY_DESC[product.collection] || "Broquel en oro de 10 kt. Se vende por par."}
               </p>
-              <ul class="mt-6 space-y-2 text-[13.5px] text-[#6f675f]">
-                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Oro de 10 kt</li>
-                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Se vende por par</li>
-                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Envío a todo México</li>
+              <ul class="mt-6 space-y-2 text-[14px] text-[var(--muted)]">
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[var(--accent)]" /> Oro de 10 kt</li>
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[var(--accent)]" /> Se vende por par</li>
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[var(--accent)]" /> Envío a todo México</li>
               </ul>
             </div>
             <div class="order-2 mt-6 flex flex-wrap items-center gap-3 md:order-none md:mt-8">
-              <div class="inline-flex h-11 items-center rounded-full border border-[#3f3a34]/15" aria-label="Cantidad">
+              <div class="inline-flex h-11 items-center rounded-full border border-[var(--ink-15)]" aria-label="Cantidad">
                 <button
-                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30"
+                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[var(--accent)] disabled:opacity-30"
                   type="button"
                   onClick={() => onQty(qty - 1)}
                   disabled={qty <= 1}
@@ -339,7 +319,7 @@ function QuickView({
                   }}
                 />
                 <button
-                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30"
+                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[var(--accent)] disabled:opacity-30"
                   type="button"
                   onClick={() => onQty(qty + 1)}
                   disabled={qty >= MAX_QTY}
@@ -349,7 +329,7 @@ function QuickView({
                 </button>
               </div>
               <button
-                class="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440] sm:flex-none"
+                class="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-[13.5px] font-medium text-[var(--button-ink)] transition hover:bg-[var(--accent-strong)] sm:flex-none"
                 type="button"
                 onClick={onAdd}
               >
@@ -411,16 +391,16 @@ function CartDrawer({
 
   return (
     <div
-      class="fixed inset-0 z-50 flex justify-end bg-[#2f2b26]/60 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex justify-end bg-[var(--backdrop-60)] backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <aside class="flex h-full w-full max-w-[440px] flex-col bg-[#f7f1e9] text-[#3f3a34]" role="dialog" aria-modal="true" aria-label="Tu selección">
-        <div class="flex items-center justify-between border-b border-[#3f3a34]/15 px-5 py-5 sm:px-6">
+      <aside class="flex h-full w-full max-w-[440px] flex-col bg-[var(--surface)] text-[var(--ink)]" role="dialog" aria-modal="true" aria-label="Tu selección">
+        <div class="flex items-center justify-between border-b border-[var(--ink-15)] px-5 py-5 sm:px-6">
           <h2 class="text-[28px] font-semibold leading-none" style={DISPLAY_FONT}>Tu selección</h2>
           <button
-            class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 transition hover:border-[#3f3a34]"
+            class="grid h-10 w-10 place-items-center rounded-full border border-[var(--ink-15)] transition hover:border-[var(--ink)]"
             type="button"
             onClick={onClose}
             aria-label="Cerrar selección"
@@ -433,28 +413,28 @@ function CartDrawer({
           {detailed.length === 0 ? (
             <div class="flex min-h-[300px] flex-col items-center justify-center gap-4 text-center">
               <p class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>Tu selección está vacía.</p>
-              <p class="max-w-[28ch] text-[13.5px] leading-relaxed text-[#6f675f]">
+              <p class="max-w-[28ch] text-[13.5px] leading-relaxed text-[var(--muted)]">
                 Explora la colección y guarda tus piezas favoritas aquí.
               </p>
-              <a class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]" href="#coleccion" onClick={onClose}>
+              <a class="inline-flex items-center justify-center rounded-full border border-[var(--ink-15)] px-6 py-3 text-[13.5px] font-medium transition hover:border-[var(--ink)]" href="#coleccion" onClick={onClose}>
                 Ver la colección
               </a>
             </div>
           ) : (
             detailed.map((line) => (
-              <div class="flex gap-4 border-b border-[#3f3a34]/15 py-4 first:pt-0" key={line.id}>
-                <ProductImage src={line.product.imageUrl} alt={line.product.name} class="h-[72px] w-16 shrink-0 rounded-[2px] bg-[#f0e6db] object-cover" />
+              <div class="flex gap-4 border-b border-[var(--ink-15)] py-4 first:pt-0" key={line.id}>
+                <ProductImage src={line.product.imageUrl} alt={line.product.name} class="h-[72px] w-16 shrink-0 rounded-[2px] bg-[var(--neutral)] object-cover" />
                 <div class="flex min-w-0 flex-1 flex-col">
                   <div class="flex items-start justify-between gap-3">
                     <p class="text-[18px] font-semibold leading-tight" style={DISPLAY_FONT}>{line.product.name}</p>
-                    <button class="shrink-0 text-[11px] text-[#6f675f] underline underline-offset-4 transition hover:text-[#3f3a34]" type="button" onClick={() => onRemove(line.id)}>
+                    <button class="shrink-0 text-[11px] text-[var(--muted)] underline underline-offset-4 transition hover:text-[var(--ink)]" type="button" onClick={() => onRemove(line.id)}>
                       Quitar
                     </button>
                   </div>
-                  <p class="mt-1 text-[12.5px] text-[#6f675f]">{formatMoney(line.product.price)} c/u</p>
+                  <p class="mt-1 text-[12.5px] text-[var(--muted)]">{formatMoney(line.product.price)} c/u</p>
                   <div class="mt-auto flex items-center justify-between gap-3 pt-3">
-                    <div class="inline-flex h-9 items-center rounded-full border border-[#3f3a34]/15">
-                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#96684f]" type="button" onClick={() => onQty(line.id, -1)} aria-label={`Quitar uno de ${line.product.name}`}>
+                    <div class="inline-flex h-9 items-center rounded-full border border-[var(--ink-15)]">
+                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[var(--accent)]" type="button" onClick={() => onQty(line.id, -1)} aria-label={`Quitar uno de ${line.product.name}`}>
                         <Icon name="minus" class="h-3.5 w-3.5" />
                       </button>
                       <input
@@ -480,7 +460,7 @@ function CartDrawer({
                           if (input.value === "") input.value = String(line.qty);
                         }}
                       />
-                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30" type="button" onClick={() => onQty(line.id, 1)} disabled={line.qty >= MAX_QTY} aria-label={`Añadir uno de ${line.product.name}`}>
+                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[var(--accent)] disabled:opacity-30" type="button" onClick={() => onQty(line.id, 1)} disabled={line.qty >= MAX_QTY} aria-label={`Añadir uno de ${line.product.name}`}>
                         <Icon name="plus" class="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -492,9 +472,9 @@ function CartDrawer({
           )}
         </div>
 
-        <div class="border-t border-[#3f3a34]/15 px-5 py-5 sm:px-6">
+        <div class="border-t border-[var(--ink-15)] px-5 py-5 sm:px-6">
           {detailed.length === 0 ? (
-            <p class="text-center text-[11px] leading-relaxed text-[#6f675f]">{whatsapp ? "Pago por transferencia, depósito o efectivo. Envíos a todo México." : ""}</p>
+            <p class="text-center text-[11px] leading-relaxed text-[var(--muted)]">{whatsapp ? "Pago por transferencia, depósito o efectivo. Envíos a todo México." : ""}</p>
           ) : (
             <div class="space-y-4">
               <PromoField
@@ -507,49 +487,49 @@ function CartDrawer({
                 onChange={onPromoCodeChange}
                 onRemove={onRemovePromo}
               />
-              <div class="space-y-2 border-b border-[#3f3a34]/15 pb-4">
+              <div class="space-y-2 border-b border-[var(--ink-15)] pb-4">
                 <div class="flex items-baseline justify-between">
-                  <span class="text-[12.5px] text-[#6f675f]">Subtotal</span>
+                  <span class="text-[12.5px] text-[var(--muted)]">Subtotal</span>
                   <span class="text-[14px] font-medium">{formatMoney(total)}</span>
                 </div>
                 {discount > 0 ? (
                   <div class="flex items-baseline justify-between">
-                    <span class="text-[12.5px] text-[#6f675f]">Descuento ({promotion?.code})</span>
-                    <span class="text-[14px] font-medium text-[#96684f]">−{formatMoney(discount)}</span>
+                    <span class="text-[12.5px] text-[var(--muted)]">Descuento ({promotion?.code})</span>
+                    <span class="text-[14px] font-medium text-[var(--accent)]">−{formatMoney(discount)}</span>
                   </div>
                 ) : null}
                 <div class="flex items-baseline justify-between">
-                  <span class="text-[12.5px] text-[#6f675f]">Envío</span>
+                  <span class="text-[12.5px] text-[var(--muted)]">Envío</span>
                   <span class="text-[14px] font-medium">{shipping === 0 ? "Gratis" : formatMoney(shipping)}</span>
                 </div>
                 {shipping > 0 && freeFrom > 0 && total - discount < freeFrom ? (
-                  <p class="text-[11px] leading-relaxed text-[#6f675f]">
+                  <p class="text-[11px] leading-relaxed text-[var(--muted)]">
                     Te faltan {formatMoney(freeFrom - (total - discount))} para envío gratis.
                   </p>
                 ) : null}
               </div>
               <div class="flex items-baseline justify-between">
-                <span class="text-[11px] uppercase tracking-[0.14em] text-[#6f675f]">Total</span>
+                <span class="text-[12px] text-[var(--muted)]">Total</span>
                 <span class="text-[28px] font-semibold leading-none" style={DISPLAY_FONT}>
-                  {formatMoney(total - discount + shipping)} <span class="text-[11px] font-normal text-[#6f675f]" style={SANS_FONT}>MXN</span>
+                  {formatMoney(total - discount + shipping)} <span class="text-[11px] font-normal text-[var(--muted)]" style={SANS_FONT}>MXN</span>
                 </span>
               </div>
-              <p class="text-[12px] leading-relaxed text-[#6f675f]">Envío calculado para todo México. Pago por transferencia, depósito o efectivo.</p>
+              <p class="text-[12px] leading-relaxed text-[var(--muted)]">Envío calculado para todo México. Pago por transferencia, depósito o efectivo.</p>
               <Link
-                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440]"
+                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-[13.5px] font-medium text-[var(--button-ink)] transition hover:bg-[var(--accent-strong)]"
                 to="/checkout"
                 onClick={onClose}
               >
                 <Icon name="lock" class="h-[1.15em] w-[1.15em]" /> Finalizar compra
               </Link>
               <button
-                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
+                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--ink-15)] px-6 py-3 text-[13.5px] font-medium transition hover:border-[var(--ink)]"
                 type="button"
                 onClick={onCheckout}
               >
                 <Icon name="whatsapp" class="h-[1.15em] w-[1.15em]" /> Pedir por WhatsApp
               </button>
-              <Link class="block text-center text-[11.5px] text-[#6f675f] underline underline-offset-4 transition hover:text-[#3f3a34]" to="/" onClick={onClose}>
+              <Link class="block text-center text-[11.5px] text-[var(--muted)] underline underline-offset-4 transition hover:text-[var(--ink)]" to="/" onClick={onClose}>
                 Seguir explorando
               </Link>
             </div>
@@ -563,10 +543,10 @@ function CartDrawer({
 function MenuSheet({ open, onClose, whatsapp, instagram }: { open: boolean; onClose: () => void; whatsapp: string; instagram: string }) {
   if (!open) return null;
   return (
-    <div class="fixed inset-0 z-50 flex flex-col bg-[#f7f1e9] text-[#3f3a34]" role="dialog" aria-modal="true" aria-label="Menú">
-      <div class="flex items-center justify-between border-b border-[#3f3a34]/15 px-5 py-5 sm:px-6">
+    <div class="fixed inset-0 z-50 flex flex-col bg-[var(--surface)] text-[var(--ink)]" role="dialog" aria-modal="true" aria-label="Menú">
+      <div class="flex items-center justify-between border-b border-[var(--ink-15)] px-5 py-5 sm:px-6">
         <Brand />
-        <button class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15" type="button" onClick={onClose} aria-label="Cerrar menú">
+        <button class="grid h-10 w-10 place-items-center rounded-full border border-[var(--ink-15)]" type="button" onClick={onClose} aria-label="Cerrar menú">
           <Icon name="x" />
         </button>
       </div>
@@ -577,19 +557,19 @@ function MenuSheet({ open, onClose, whatsapp, instagram }: { open: boolean; onCl
           ["#como-comprar", "Cómo comprar"],
           ["#contacto", "Contacto"]
         ].map(([href, label]) => (
-          <a class="border-b border-[#3f3a34]/15 py-5 text-[34px] font-semibold leading-none tracking-[-0.02em] transition hover:text-[#96684f]" style={DISPLAY_FONT} href={href} onClick={onClose} key={href}>
+          <a class="border-b border-[var(--ink-15)] py-5 text-[34px] font-semibold leading-none tracking-[-0.02em] transition hover:text-[var(--accent)]" style={DISPLAY_FONT} href={href} onClick={onClose} key={href}>
             {label}
           </a>
         ))}
       </nav>
-      <div class="flex flex-col items-start gap-4 border-t border-[#3f3a34]/15 px-5 py-6 sm:px-6">
-        <a class="inline-flex items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9]" href="#coleccion" onClick={onClose}>
+      <div class="flex flex-col items-start gap-4 border-t border-[var(--ink-15)] px-5 py-6 sm:px-6">
+        <a class="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-[13.5px] font-medium text-[var(--button-ink)]" href="#coleccion" onClick={onClose}>
           Ver la colección
         </a>
-        <a class="inline-flex items-center gap-2 text-[13px] text-[#6f675f] transition hover:text-[#3f3a34]" href={buildWhatsappUrl(whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">
+        <a class="inline-flex items-center gap-2 text-[13px] text-[var(--muted)] transition hover:text-[var(--ink)]" href={buildWhatsappUrl(whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">
           <Icon name="whatsapp" /> WhatsApp {formatPhone(whatsapp)}
         </a>
-        <a class="inline-flex items-center gap-2 text-[13px] text-[#6f675f] transition hover:text-[#3f3a34]" href={`https://www.instagram.com/${instagram}/`} target="_blank" rel="noopener">
+        <a class="inline-flex items-center gap-2 text-[13px] text-[var(--muted)] transition hover:text-[var(--ink)]" href={`https://www.instagram.com/${instagram}/`} target="_blank" rel="noopener">
           <Icon name="instagram" /> @{instagram}
         </a>
       </div>
@@ -813,75 +793,68 @@ export function Shop() {
   }
 
   return (
-    <div style={SANS_FONT} class="min-h-screen bg-[#fbf9f6] text-[#3f3a34]">
-      <div class="bg-[#403b35] text-[#fbf8f3]">
-        <div class="mx-auto flex h-9 w-full max-w-[1320px] items-center justify-center gap-4 px-5 text-[10px] uppercase tracking-[0.16em] sm:gap-8 sm:px-7 lg:px-9">
-          <span>Oro de 10 kt</span>
-          <span class="h-3 w-px bg-[#fbf8f3]/25" aria-hidden="true" />
-          <span>{settings.shippingNote}</span>
-          <span class="hidden h-3 w-px bg-[#fbf8f3]/25 sm:block" aria-hidden="true" />
-          <span class="hidden sm:inline">Pedidos por WhatsApp</span>
-        </div>
-      </div>
-
-      <header class="sticky top-0 z-40 border-b border-[#3f3a34]/15 bg-[#fbf9f6]/95 backdrop-blur-md">
-        <div class="relative mx-auto flex h-[72px] w-full max-w-[1320px] items-center gap-3 px-5 sm:px-7 lg:px-9">
-          <button class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 lg:hidden" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú">
-            <Icon name="menu" />
-          </button>
-          <Link to="/" class="no-underline" aria-label="Joyería Fina, inicio">
-            <Brand />
-          </Link>
-          <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[13px] font-medium tracking-[0.02em] lg:flex" aria-label="Navegación principal">
-            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#coleccion">Colección</a>
-            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#favoritos">Favoritos</a>
-            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#como-comprar">Cómo comprar</a>
-          </nav>
-          <div class="ml-auto flex items-center gap-1 sm:gap-2">
-            <a
-              class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 transition hover:border-[#3f3a34]"
-              href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
-              target="_blank"
-              rel="noopener"
-              aria-label="Escríbenos por WhatsApp"
-            >
-              <Icon name="whatsapp" />
-            </a>
+    <div style={SANS_FONT} class="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+      <header class="sticky top-0 z-40 border-b border-[var(--ink-15)] bg-[var(--paper-95)] backdrop-blur-md">
+        <div class="mx-auto flex h-[72px] w-full max-w-[1320px] items-center justify-between gap-4 px-5 sm:px-7 lg:px-9">
+          <div class="flex min-w-0 items-center gap-5">
             <button
-              class="ml-1 inline-flex h-10 items-center gap-2 rounded-full border border-[#3f3a34]/15 px-2.5 text-[12px] font-medium transition hover:border-[#3f3a34] active:scale-[0.97] sm:px-4"
+              class="grid h-11 w-11 place-items-center rounded-full border border-[var(--ink-15)] lg:hidden"
               type="button"
-              onClick={() => setCartOpen(true)}
-              aria-label={`Abrir tu selección, ${cartCount} piezas`}
+              onClick={() => setMenuOpen(true)}
+              aria-label="Abrir menú"
             >
-              <Icon name="bag" />
-              <span class="hidden sm:inline">Selección</span>
-              <span class="grid h-5 min-w-5 place-items-center rounded-full bg-[#96684f] px-1 text-[10px] font-semibold text-[#fffdf9]">{cartCount}</span>
+              <Icon name="menu" />
             </button>
+            <Link to="/" class="shrink-0 no-underline" aria-label="Joyería Fina, inicio">
+              <Brand />
+            </Link>
+            <nav class="hidden items-center gap-7 text-[14px] lg:flex" aria-label="Navegación principal">
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#coleccion">Colección</a>
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#favoritos">Favoritos</a>
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#como-comprar">Cómo comprar</a>
+              <a
+                class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]"
+                href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
+                target="_blank"
+                rel="noopener"
+              >
+                WhatsApp
+              </a>
+            </nav>
           </div>
+          <button
+            class="inline-flex h-11 shrink-0 items-center gap-2 text-[14px] font-medium transition-colors duration-200 hover:text-[var(--accent)]"
+            type="button"
+            onClick={() => setCartOpen(true)}
+            aria-label={`Abrir tu selección, ${cartCount} piezas`}
+          >
+            <Icon name="bag" class="h-5 w-5" />
+            <span>Selección</span>
+            <span class="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--accent)] px-1 text-[11px] font-medium text-[var(--button-ink)]">{cartCount}</span>
+          </button>
         </div>
       </header>
 
       <main>
         <HeroProducts products={products} settings={settings} onQuick={(id) => { setQuickId(id); setQuickQty(1); }} />
-        <TrustStrip settings={settings} />
 
-        <section class="py-16 sm:py-20 lg:py-28" id="coleccion" aria-labelledby="collection-title">
+        <section class="py-16 sm:py-20 lg:py-24" id="coleccion" aria-labelledby="collection-title">
           <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
             <div class="max-w-[640px]">
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="collection-title">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--taupe)]" style={DISPLAY_FONT} id="collection-title">
                 La colección
               </h2>
-              <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">
-                {productsLoaded ? `${products.length} broqueles en oro de 10 kt.` : "Broqueles en oro de 10 kt."} Elige tu favorito y escríbenos para coordinar el envío.
+              <p class="mt-3 text-[16px] leading-relaxed text-[var(--muted)]">
+                {productsLoaded ? `${products.length} broqueles en oro de 10 kt.` : "Broqueles en oro de 10 kt."}
               </p>
             </div>
 
-            <div class="mt-10 flex flex-col gap-5 border-b border-[#3f3a34]/15 pb-5 lg:flex-row lg:items-center lg:justify-between">
-              <div class="flex items-center gap-2 border-b border-[#3f3a34]/15 pb-2 lg:w-[280px]">
-                <Icon name="search" class="h-4 w-4 text-[#6f675f]" />
+            <div class="mt-10 flex flex-col gap-5 border-b border-[var(--ink-15)] pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div class="flex items-center gap-2 lg:w-[280px]">
+                <Icon name="search" class="h-4 w-4 shrink-0 text-[var(--muted)]" />
                 <label class="sr-only" for="search">Buscar una pieza</label>
                 <input
-                  class="w-full bg-transparent py-1 text-[14px] outline-none placeholder:text-[#6f675f]/80"
+                  class="min-h-11 w-full border-b border-[var(--field-edge)] bg-transparent pb-2 pt-1 text-[14px] outline-none placeholder:text-[var(--muted-80)]"
                   id="search"
                   type="search"
                   placeholder="Buscar por nombre o forma"
@@ -894,13 +867,13 @@ export function Shop() {
                 />
               </div>
 
-              <div class="flex gap-2 overflow-x-auto pb-1 lg:pb-0" role="group" aria-label="Filtrar por colección">
+              <div class="flex gap-6 overflow-x-auto pb-1 lg:pb-0" role="group" aria-label="Filtrar por colección">
                 {COLLECTIONS.map((item) => (
                   <button
-                    class={`whitespace-nowrap rounded-full border px-3.5 py-2 text-[12px] font-medium tracking-[0.02em] transition active:scale-[0.97] ${
+                    class={`min-h-11 whitespace-nowrap py-2 text-[14px] transition-colors duration-200 ${
                       collection === item.id
-                        ? "border-[#3f3a34] bg-[#3f3a34] text-[#f7f1e9]"
-                        : "border-[#3f3a34]/15 text-[#6f675f] hover:border-[#3f3a34] hover:text-[#3f3a34]"
+                        ? "border-b border-[var(--ink)] text-[var(--ink)]"
+                        : "text-[var(--muted)] hover:text-[var(--ink)]"
                     }`}
                     type="button"
                     aria-pressed={collection === item.id}
@@ -915,10 +888,10 @@ export function Shop() {
                 ))}
               </div>
 
-              <div class="relative flex items-center gap-2 text-[13px] text-[#6f675f]">
+              <div class="relative flex items-center gap-2 text-[14px] text-[var(--muted)]">
                 <label class="sr-only" for="sort">Ordenar por</label>
                 <select
-                  class="appearance-none bg-transparent py-2 pr-6 text-[13px] text-[#3f3a34] outline-none"
+                  class="min-h-11 appearance-none border-b border-[var(--field-edge)] bg-transparent pb-2 pr-6 pt-1 text-[14px] text-[var(--ink)] outline-none"
                   id="sort"
                   value={sort}
                   onChange={(event) => {
@@ -935,27 +908,27 @@ export function Shop() {
               </div>
             </div>
 
-            <p class="mt-4 text-[12px] tracking-[0.02em] text-[#6f675f]" aria-live="polite">
+            <p class="mt-4 text-[13px] text-[var(--muted)]" aria-live="polite">
               {!productsLoaded ? "" : filtered.length === 0 ? "0 piezas" : shown.length === filtered.length ? `${filtered.length} piezas` : `Mostrando ${shown.length} de ${filtered.length} piezas`}
             </p>
 
             {!productsLoaded ? (
               <div class="mt-6 min-h-[240px]" aria-hidden="true" />
             ) : shown.length === 0 ? (
-              <div class="mt-6 flex flex-col items-start gap-4 border border-[#3f3a34]/15 bg-[#f0e6db]/50 px-6 py-12">
+              <div class="mt-6 flex flex-col items-start gap-4 border border-[var(--ink-15)] bg-[var(--neutral-50)] px-6 py-12">
                 <p class="text-[32px] font-semibold leading-none" style={DISPLAY_FONT}>
                   {products.length === 0 ? "El catálogo está vacío." : "No encontramos esa pieza."}
                 </p>
-                <p class="max-w-[42ch] text-[14px] leading-relaxed text-[#6f675f]">
+                <p class="max-w-[42ch] text-[14px] leading-relaxed text-[var(--muted)]">
                   {products.length === 0 ? "Entra al panel para agregar la primera pieza." : "Prueba con otra palabra o vuelve a ver toda la colección."}
                 </p>
                 {products.length === 0 ? (
-                  <Link class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]" to="/admin">
+                  <Link class="inline-flex items-center justify-center rounded-full border border-[var(--ink-15)] px-6 py-3 text-[13.5px] font-medium transition hover:border-[var(--ink)]" to="/admin">
                     Abrir panel
                   </Link>
                 ) : (
                   <button
-                    class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
+                    class="inline-flex items-center justify-center rounded-full border border-[var(--ink-15)] px-6 py-3 text-[13.5px] font-medium transition hover:border-[var(--ink)]"
                     type="button"
                     onClick={() => {
                       setCollection("todos");
@@ -969,7 +942,7 @@ export function Shop() {
                 )}
               </div>
             ) : (
-              <div class="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 md:grid-cols-3 xl:grid-cols-4 xl:gap-x-6">
+              <div class="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 sm:gap-y-12 md:grid-cols-3 xl:grid-cols-4">
                 {shown.map((product) => (
                   <ProductCard
                     product={product}
@@ -989,7 +962,7 @@ export function Shop() {
             {shown.length < filtered.length ? (
               <div class="mt-12 flex justify-center">
                 <button
-                  class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
+                  class="inline-flex min-h-11 items-center border-b border-[var(--ink-30)] pb-1 text-[14px] font-medium text-[var(--ink)] transition-colors duration-200 hover:border-[var(--ink)] hover:text-[var(--accent)]"
                   type="button"
                   onClick={() => setVisible((value) => value + PAGE_SIZE)}
                 >
@@ -1001,62 +974,72 @@ export function Shop() {
         </section>
 
         {heroProducts.length > 0 ? (
-          <section class="border-y border-[#3f3a34]/15 bg-[#f0e6db] py-16 sm:py-20 lg:py-24" id="favoritos" aria-labelledby="featured-title">
+          <section class="border-y border-[var(--ink-15)] bg-[var(--neutral)] py-16 sm:py-20 lg:py-24" id="favoritos" aria-labelledby="featured-title">
             <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
               <div class="max-w-[620px]">
-                <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="featured-title">
-                  Favoritos de la casa
+                <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--taupe)]" style={DISPLAY_FONT} id="featured-title">
+                  Favoritos<br />de la casa
                 </h2>
-                <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">Tres piezas que combinan con todo, solas o en capas.</p>
+                <p class="mt-3 text-[16px] leading-relaxed text-[var(--muted)]">Tres piezas que combinan con todo.</p>
               </div>
 
-              <div class="mt-10 grid gap-4 lg:grid-cols-[1.18fr_.82fr] lg:gap-6">
+              <div class="mt-10 grid gap-10 lg:grid-cols-[1.2fr_.8fr] lg:gap-12">
                 {heroProducts[0] ? (
-                  <button class="group block w-full text-left" type="button" onClick={() => { setQuickId(heroProducts[0].id); setQuickQty(1); }} aria-label={`Ver ${heroProducts[0].name}`}>
-                    <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#fffdfb]">
-                      <ProductImage src={heroProducts[0].imageUrl} alt={heroProducts[0].name} class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+                  <button
+                    class="group block text-left"
+                    type="button"
+                    onClick={() => { setQuickId(heroProducts[0].id); setQuickQty(1); }}
+                    aria-label={`Ver ${heroProducts[0].name}`}
+                  >
+                    <span class="block aspect-[4/5] max-h-[620px] overflow-hidden bg-[var(--card)]">
+                      <ProductImage src={heroProducts[0].imageUrl} alt={heroProducts[0].name} class="h-full w-full object-cover" />
                     </span>
-                    <span class="mt-3 flex items-baseline justify-between gap-4">
-                      <span class="text-[24px] font-semibold leading-none" style={DISPLAY_FONT}>{heroProducts[0].name.replace(/^Broquel /, "")}</span>
-                      <span class="text-[13px] font-medium">{formatMoney(heroProducts[0].price)}</span>
+                    <span class="mt-4 flex items-center justify-between gap-4 border-t border-[var(--ink-15)] pt-4">
+                      <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[22px] font-medium uppercase leading-none tracking-[0.01em]" style={DISPLAY_FONT}>
+                        {heroProducts[0].name.replace(/^Broquel /, "")}
+                      </span>
+                      <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[var(--ink-15)] bg-[var(--card)] text-[12px] font-medium text-[var(--ink)]">
+                        {formatMoney(heroProducts[0].price)}
+                      </span>
                     </span>
                   </button>
                 ) : null}
 
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
+                <div class="flex flex-col divide-y divide-[var(--ink-15)] border-y border-[var(--ink-15)]">
                   {heroProducts.slice(1).map((product) => (
                     <button
-                      class="group grid grid-cols-[1fr_1.1fr] items-center gap-4 text-left sm:grid-cols-1 sm:items-stretch lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+                      class="grid grid-cols-[88px_1fr] items-center gap-4 py-4 text-left first:pt-0 last:pb-0"
                       type="button"
                       onClick={() => { setQuickId(product.id); setQuickQty(1); }}
                       aria-label={`Ver ${product.name}`}
                       key={product.id}
                     >
-                      <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#fffdfb] sm:h-full sm:aspect-auto">
-                        <ProductImage src={product.imageUrl} alt={product.name} class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+                      <span class="block aspect-[7/8] overflow-hidden bg-[var(--card)]">
+                        <ProductImage src={product.imageUrl} alt={product.name} class="h-full w-full object-cover" />
                       </span>
-                      <span class="flex flex-col justify-center gap-1">
-                        <span class="text-[22px] font-semibold leading-none" style={DISPLAY_FONT}>{product.name.replace(/^Broquel /, "")}</span>
-                        <span class="text-[12.5px] font-medium">{formatMoney(product.price)}</span>
+                      <span class="min-w-0">
+                        <span class="block overflow-hidden text-ellipsis whitespace-nowrap text-[18px] font-medium uppercase leading-tight tracking-[0.01em]" style={DISPLAY_FONT}>
+                          {product.name.replace(/^Broquel /, "")}
+                        </span>
+                        <span class="mt-1 block text-[13px] text-[var(--muted)]">{formatMoney(product.price)}</span>
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div class="mt-8">
-                <a class="inline-flex items-center gap-2 text-[13px] font-medium tracking-[0.02em] text-[#3f3a34] underline-offset-4 transition hover:text-[#96684f] hover:underline" href="#coleccion">
+              <div class="mt-9">
+                <a class="border-b border-[var(--ink-30)] pb-1 text-[14px] font-medium text-[var(--ink)] transition-colors duration-200 hover:border-[var(--ink)] hover:text-[var(--accent)]" href="#coleccion">
                   Ver toda la colección
-                  <Icon name="arrow" class="h-[1.15em] w-[1.15em]" />
                 </a>
               </div>
             </div>
           </section>
         ) : null}
 
-        <section class="py-16 sm:py-24 lg:py-28" aria-labelledby="story-title">
-          <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 sm:px-7 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-9">
-            <figure class="overflow-hidden rounded-[2px] border border-[#3f3a34]/10 bg-[#f0e6db]">
+        <section class="py-16 sm:py-20 lg:py-24" aria-labelledby="story-title">
+          <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 sm:px-7 lg:grid-cols-[5fr_6fr] lg:gap-16 lg:px-9">
+            <figure class="overflow-hidden border border-[var(--ink-15)] bg-[var(--neutral)]">
               {settings.storyImageUrl || products[1]?.imageUrl ? (
                 <ProductImage
                   src={settings.storyImageUrl || products[1]?.imageUrl || ""}
@@ -1064,85 +1047,98 @@ export function Shop() {
                   class="aspect-[4/5] h-full w-full object-cover object-[50%_45%]"
                 />
               ) : (
-                <span class="grid aspect-[4/5] w-full place-items-center text-[#6f675f]"><Icon name="image" class="h-10 w-10 opacity-30" /></span>
+                <span class="grid aspect-[4/5] w-full place-items-center text-[var(--muted)]"><Icon name="image" class="h-10 w-10 opacity-30" /></span>
               )}
             </figure>
-            <div>
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="story-title">
-                Oro de 10 kt, todos los días.
+            <div class="min-w-0">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--taupe)]" style={DISPLAY_FONT} id="story-title">
+                Oro de 10 kt,<br />todos los días.
               </h2>
-              <p class="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-[#6f675f]">
+              <p class="mt-5 max-w-[54ch] text-[16px] leading-relaxed text-[var(--muted)]">
                 Los broqueles de la colección están hechos en oro de 10 kt. Son ligeros, brillantes y fáciles de combinar entre sí.
               </p>
-              <p class="mt-4 max-w-[54ch] text-[15.5px] leading-relaxed text-[#6f675f]">
+              <p class="mt-4 max-w-[54ch] text-[16px] leading-relaxed text-[var(--muted)]">
                 Úsalos solos para un detalle discreto o reúne varios en la misma oreja. No hay una forma correcta.
               </p>
-              <ul class="mt-8 grid grid-cols-3 gap-4 border-t border-[#3f3a34]/15 pt-6">
-                <li class="flex flex-col gap-1">
-                  <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>10 kt</span>
-                  <span class="text-[11.5px] text-[#6f675f]">Pureza del oro</span>
-                </li>
-                <li class="flex flex-col gap-1">
-                  <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>Par</span>
-                  <span class="text-[11.5px] text-[#6f675f]">Se vende por par</span>
-                </li>
-                <li class="flex flex-col gap-1">
-                  <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>MX</span>
-                  <span class="text-[11.5px] text-[#6f675f]">Envíos a todo el país</span>
-                </li>
-              </ul>
+              <dl class="mt-9 grid grid-cols-3 border-t border-[var(--ink-15)] pt-6">
+                <div class="pr-5">
+                  <dt class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>10 kt</dt>
+                  <dd class="mt-1.5 text-[13px] text-[var(--muted)]">Pureza del oro</dd>
+                </div>
+                <div class="border-l border-[var(--ink-15)] px-5">
+                  <dt class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>Par</dt>
+                  <dd class="mt-1.5 text-[13px] text-[var(--muted)]">Se vende por par</dd>
+                </div>
+                <div class="border-l border-[var(--ink-15)] pl-5">
+                  <dt class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>MX</dt>
+                  <dd class="mt-1.5 text-[13px] text-[var(--muted)]">Envíos a todo el país</dd>
+                </div>
+              </dl>
             </div>
           </div>
         </section>
 
-        <section class="border-t border-[#3f3a34]/15 bg-[#f7f1e9] py-16 sm:py-20 lg:py-24" id="como-comprar" aria-labelledby="how-title">
-          <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
-            <div class="max-w-[600px]">
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="how-title">
+        <section class="border-t border-[var(--ink-15)] bg-[var(--surface)] py-16 sm:py-20 lg:py-24" id="como-comprar" aria-labelledby="how-title">
+          <div class="mx-auto grid w-full max-w-[1320px] gap-10 px-5 sm:px-7 lg:grid-cols-[4fr_8fr] lg:gap-16 lg:px-9">
+            <div class="max-w-[380px]">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--taupe)]" style={DISPLAY_FONT} id="how-title">
                 Cómo comprar
               </h2>
-              <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">Sin cuentas ni formularios. Elegimos contigo y coordinamos todo por WhatsApp.</p>
+              <p class="mt-4 text-[16px] leading-relaxed text-[var(--muted)]">Sin cuentas ni formularios. Todo por WhatsApp.</p>
+              <p class="mt-6 text-[14px] leading-relaxed text-[var(--muted)]">
+                Pedidos al{" "}
+                <a class="font-medium text-[var(--ink)] underline underline-offset-4 hover:text-[var(--accent)]" href={buildWhatsappUrl(settings.whatsapp, "Hola, quiero hacer un pedido.")} target="_blank" rel="noopener">
+                  {formatPhone(settings.whatsapp)}
+                </a>
+                .
+              </p>
+              <Icon name="arrow" class="mt-8 h-6 w-6 text-[var(--taupe)]" />
             </div>
-            <div class="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-6">
+            <ol class="border-y border-[var(--ink-15)]">
               {[
-                ["Elige", "Encuentra tu par en la colección. Cada pieza está disponible en el color que ves."],
-                ["Escríbenos", "Mándanos tu selección por WhatsApp. Te confirmamos disponibilidad y envío."],
-                ["Recibe", "Coordinamos el pago por transferencia, depósito o efectivo y enviamos a todo México."]
-              ].map(([title, copy]) => (
-                <article class="border-t border-[#3f3a34]/30 pt-5" key={title}>
-                  <h3 class="text-[32px] font-semibold leading-none" style={DISPLAY_FONT}>{title}</h3>
-                  <p class="mt-3 max-w-[32ch] text-[14.5px] leading-relaxed text-[#6f675f]">{copy}</p>
-                </article>
+                ["Elige", "Encuentra tu par en la colección."],
+                ["Escríbenos", "Mándanos tu selección por WhatsApp."],
+                ["Recibe", "Coordinamos pago y envío a todo México."]
+              ].map(([title, copy], index) => (
+                <li class="grid grid-cols-[40px_1fr] gap-4 border-b border-[var(--ink-15)] py-6 last:border-b-0 sm:py-8" key={title}>
+                  <span class="pt-1 text-[14px] tabular-nums text-[var(--muted)]" aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 class="text-[26px] font-medium leading-none" style={DISPLAY_FONT}>{title}</h3>
+                    <p class="mt-2 max-w-[44ch] text-[15px] leading-relaxed text-[var(--muted)]">{copy}</p>
+                  </div>
+                </li>
               ))}
-            </div>
-            <p class="mt-10 text-[14px] text-[#6f675f]">
-              Pedidos por WhatsApp al{" "}
-              <a class="font-medium text-[#3f3a34] underline underline-offset-4 hover:text-[#96684f]" href={buildWhatsappUrl(settings.whatsapp, "Hola, quiero hacer un pedido.")} target="_blank" rel="noopener">
-                {formatPhone(settings.whatsapp)}
-              </a>
-              .
-            </p>
+            </ol>
           </div>
         </section>
 
-        <section class="bg-[#403b35] text-[#fbf8f3]" id="contacto" aria-labelledby="contact-title">
-          <div class="mx-auto grid w-full max-w-[1320px] gap-8 px-5 py-14 sm:px-7 sm:py-16 lg:grid-cols-[1.25fr_.75fr] lg:items-end lg:gap-16 lg:px-9 lg:py-20">
+        <section class="bg-[var(--dark)] text-[var(--dark-ink)]" id="contacto" aria-labelledby="contact-title">
+          <div class="mx-auto grid w-full max-w-[1320px] gap-8 px-5 py-16 sm:px-7 sm:py-20 lg:grid-cols-[1.2fr_.8fr] lg:items-end lg:gap-16 lg:px-9 lg:py-24">
             <div>
-              <h2 class="text-[clamp(2.4rem,4.6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="contact-title">
+              <h2 class="text-[clamp(2.4rem,4.6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[var(--dark-ink)]" style={DISPLAY_FONT} id="contact-title">
                 ¿Te ayudamos a elegir?
               </h2>
-              <p class="mt-3 max-w-[48ch] text-[15px] leading-relaxed text-[#fbf8f3]/70">Escríbenos y te compartimos disponibilidad, medidas y opciones de envío.</p>
+              <p class="mt-4 max-w-[48ch] text-[16px] leading-relaxed text-[var(--dark-ink-70)]">
+                Escríbenos y te compartimos disponibilidad, medidas y envío.
+              </p>
             </div>
-            <div class="flex flex-col items-start gap-4 lg:items-end">
+            <div class="flex flex-col items-start gap-5 lg:items-end">
               <a
-                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f7f1e9] px-6 py-3 text-[13.5px] font-medium text-[#3f3a34] transition hover:bg-[#fffdfb]"
+                class="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--surface)] px-7 py-3.5 text-[14px] font-medium text-[var(--ink)] transition-colors duration-200 hover:bg-[var(--card)]"
                 href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
                 target="_blank"
                 rel="noopener"
               >
                 <Icon name="whatsapp" /> Escríbenos por WhatsApp
               </a>
-              <a class="inline-flex items-center gap-2 text-[13px] text-[#fbf8f3]/70 transition hover:text-[#fbf8f3]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
+              <a
+                class="inline-flex items-center gap-2 text-[14px] text-[var(--dark-ink-70)] transition-colors duration-200 hover:text-[var(--dark-ink)]"
+                href={`https://www.instagram.com/${settings.instagram}/`}
+                target="_blank"
+                rel="noopener"
+              >
                 <Icon name="instagram" /> @{settings.instagram}
               </a>
             </div>
@@ -1150,42 +1146,36 @@ export function Shop() {
         </section>
       </main>
 
-      <footer class="border-t border-[#fbf8f3]/10 bg-[#403b35] text-[#fbf8f3]">
-        <div class="mx-auto grid w-full max-w-[1320px] gap-10 px-5 py-14 sm:grid-cols-2 sm:px-7 lg:grid-cols-[1.5fr_.7fr_1fr_1fr] lg:px-9 lg:py-16">
-          <div>
-            <a href="#top" class="inline-flex items-center gap-2.5 no-underline" aria-label="Joyería Fina, inicio">
-              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#fbf8f3]/60 text-[15px] font-semibold leading-none tracking-[0.04em]" style={DISPLAY_FONT} aria-hidden="true">JF</span>
-              <span class="text-[24px] font-semibold leading-none tracking-[-0.01em]" style={DISPLAY_FONT}>Joyería Fina</span>
-            </a>
-            <p class="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-[#fbf8f3]/60">Broqueles de oro de 10 kt. Una selección de joyería fina para todos los días.</p>
+      <footer class="border-t border-[var(--ink-15)] bg-[var(--paper)]">
+        <div class="mx-auto w-full max-w-[1320px] px-5 py-12 sm:px-7 lg:px-9 lg:py-16">
+          <div class="grid gap-10 lg:grid-cols-[1.4fr_.6fr]">
+            <div>
+              <a href="#top" class="inline-flex items-center gap-2.5 no-underline" aria-label="Joyería Fina, inicio">
+                <Brand />
+              </a>
+              <p class="mt-4 max-w-[38ch] text-[15px] leading-relaxed text-[var(--muted)]">
+                Broqueles de oro de 10 kt. Una selección de joyería fina para todos los días.
+              </p>
+            </div>
+            <nav class="flex flex-col items-start gap-2.5 text-[14px]" aria-label="Pie de página">
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#coleccion">Colección</a>
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#favoritos">Favoritos</a>
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#como-comprar">Cómo comprar</a>
+              <a class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" href="#contacto">Contacto</a>
+              <Link class="text-[var(--muted)] transition-colors duration-200 hover:text-[var(--ink)]" to="/admin">Administrar</Link>
+            </nav>
           </div>
-          <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Tienda</h3>
-            <div class="mt-4 flex flex-col items-start">
-              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#coleccion">Colección</a>
-              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#favoritos">Favoritos</a>
-              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#como-comprar">Cómo comprar</a>
+          <div class="mt-10 grid gap-6 border-t border-[var(--ink-15)] pt-6 text-[13px] leading-relaxed text-[var(--muted)] sm:grid-cols-2">
+            <p>{settings.paymentNote} {settings.shippingNote}</p>
+            <div class="flex flex-col gap-2 sm:items-end">
+              <a class="transition-colors duration-200 hover:text-[var(--ink)]" href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">WhatsApp {formatPhone(settings.whatsapp)}</a>
+              <a class="transition-colors duration-200 hover:text-[var(--ink)]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">@{settings.instagram}</a>
             </div>
           </div>
-          <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Contacto</h3>
-            <div class="mt-4 flex flex-col items-start">
-              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">WhatsApp {formatPhone(settings.whatsapp)}</a>
-              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">@{settings.instagram}</a>
-            </div>
+          <div class="mt-6 flex flex-col gap-2 border-t border-[var(--ink-15)] pt-4 text-[12.5px] text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
+            <span>© 2026 Joyería Fina</span>
+            <span>Oro de 10 kt. Hecho para brillar.</span>
           </div>
-          <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Pagos y envíos</h3>
-            <p class="mt-4 text-[13px] leading-relaxed text-[#fbf8f3]/60">{settings.paymentNote}</p>
-            <p class="mt-2 text-[13px] leading-relaxed text-[#fbf8f3]/60">{settings.shippingNote}</p>
-          </div>
-        </div>
-        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-2 border-t border-[#fbf8f3]/10 px-5 py-6 text-[11px] text-[#fbf8f3]/45 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
-          <span>© 2026 Joyería Fina</span>
-          <span class="inline-flex items-center gap-3">
-            <span>Oro de 10 kt · Hecho para brillar</span>
-            <Link class="text-[#fbf8f3]/45 underline-offset-4 transition hover:text-[#fbf8f3] hover:underline" to="/admin">Administrar</Link>
-          </span>
         </div>
       </footer>
 

@@ -85,8 +85,8 @@ const METHOD_LABEL: Record<Method, string> = {
 };
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-[2px] border border-[#3f3a34]/20 bg-transparent px-4 py-3 text-[14px] outline-none transition focus:border-[#96684f]";
-const LABEL_CLASS = "block text-[12px] font-medium tracking-[0.02em] text-[#6f675f]";
+  "mt-2 w-full rounded-[2px] border border-[var(--field-edge)] bg-transparent px-4 py-3 text-[14px] outline-none transition focus:border-[var(--accent)]";
+const LABEL_CLASS = "block text-[12px] font-medium tracking-[0.02em] text-[var(--muted)]";
 
 function readAddress(): Address {
   try {
@@ -121,12 +121,12 @@ function formatExpiry(value: string): string {
 function OrderThumb({ src }: { src: string }) {
   if (!src) {
     return (
-      <span class="grid h-16 w-14 shrink-0 place-items-center rounded-[2px] bg-[#f0e6db] text-[#6f675f]">
+      <span class="grid h-16 w-14 shrink-0 place-items-center rounded-[2px] bg-[var(--neutral)] text-[var(--muted)]">
         <Icon name="image" class="h-5 w-5 opacity-40" />
       </span>
     );
   }
-  return <img class="h-16 w-14 shrink-0 rounded-[2px] bg-[#f0e6db] object-cover" src={src} alt="" loading="lazy" />;
+  return <img class="h-16 w-14 shrink-0 rounded-[2px] bg-[var(--neutral)] object-cover" src={src} alt="" decoding="async" />;
 }
 
 export function Checkout() {
@@ -293,13 +293,13 @@ export function Checkout() {
     : "";
 
   return (
-    <div class="min-h-screen bg-[#fbf9f6] text-[#3f3a34]" style={SANS_FONT}>
-      <header class="sticky top-0 z-40 border-b border-[#3f3a34]/15 bg-[#fbf9f6]/95 backdrop-blur-md">
+    <div class="min-h-screen bg-[var(--paper)] text-[var(--ink)]" style={SANS_FONT}>
+      <header class="sticky top-0 z-40 border-b border-[var(--ink-15)] bg-[var(--paper-95)] backdrop-blur-md">
         <div class="mx-auto flex h-[72px] w-full max-w-[1180px] items-center justify-between gap-4 px-5 sm:px-7 lg:px-9">
           <Link to="/" class="no-underline">
             <Brand />
           </Link>
-          <Link class="text-[12.5px] text-[#6f675f] underline-offset-4 transition hover:text-[#3f3a34] hover:underline" to="/">
+          <Link class="text-[12.5px] text-[var(--muted)] underline-offset-4 transition hover:text-[var(--ink)] hover:underline" to="/">
             Volver a la tienda
           </Link>
         </div>
@@ -308,16 +308,16 @@ export function Checkout() {
       <main class="mx-auto w-full max-w-[1180px] px-5 py-10 sm:px-7 lg:px-9 lg:py-14">
         {order ? (
           <section class="mx-auto max-w-[680px]">
-            <span class="grid h-12 w-12 place-items-center rounded-full border border-[#96684f]/25 text-[#96684f]">
+            <span class="grid h-12 w-12 place-items-center rounded-full border border-[var(--accent-25)] text-[var(--accent)]">
               <Icon name="check" class="h-5 w-5" />
             </span>
             <h1 class="mt-6 text-[clamp(2.4rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT}>
               Pedido confirmado.
             </h1>
-            <p class="mt-4 text-[15px] leading-relaxed text-[#6f675f]">
+            <p class="mt-4 text-[15px] leading-relaxed text-[var(--muted)]">
               Gracias{address.name ? `, ${address.name.split(" ")[0]}` : ""}. Tu pedido <strong>{order.id}</strong> quedó registrado con pago por {METHOD_LABEL[order.method].toLowerCase()}.
             </p>
-            <p class="mt-2 text-[13px] leading-relaxed text-[#6f675f]">
+            <p class="mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
               {order.method === "transfer"
                 ? "Te compartiremos los datos bancarios por WhatsApp para completar la transferencia."
                 : order.method === "paypal"
@@ -325,7 +325,7 @@ export function Checkout() {
                   : "Este es un pago de demostración: no se realizó ningún cargo a la tarjeta."}
             </p>
 
-            <div class="mt-8 border-y border-[#3f3a34]/15 py-5">
+            <div class="mt-8 border-y border-[var(--ink-15)] py-5">
               <ul class="space-y-3">
                 {order.items.map((item) => (
                   <li class="flex items-baseline justify-between gap-4 text-[13.5px]" key={`${item.name}-${item.qty}`}>
@@ -334,19 +334,19 @@ export function Checkout() {
                   </li>
                 ))}
               </ul>
-              <dl class="mt-4 space-y-2 border-t border-[#3f3a34]/15 pt-4 text-[13px]">
+              <dl class="mt-4 space-y-2 border-t border-[var(--ink-15)] pt-4 text-[13px]">
                 <div class="flex items-baseline justify-between">
-                  <dt class="text-[#6f675f]">Subtotal</dt>
+                  <dt class="text-[var(--muted)]">Subtotal</dt>
                   <dd>{formatMoney(order.subtotal)}</dd>
                 </div>
                 {order.discount > 0 ? (
                   <div class="flex items-baseline justify-between">
-                    <dt class="text-[#6f675f]">Descuento ({order.promoCode})</dt>
-                    <dd class="text-[#96684f]">−{formatMoney(order.discount)}</dd>
+                    <dt class="text-[var(--muted)]">Descuento ({order.promoCode})</dt>
+                    <dd class="text-[var(--accent)]">−{formatMoney(order.discount)}</dd>
                   </div>
                 ) : null}
                 <div class="flex items-baseline justify-between">
-                  <dt class="text-[#6f675f]">Envío</dt>
+                  <dt class="text-[var(--muted)]">Envío</dt>
                   <dd>{order.shipping === 0 ? "Gratis" : formatMoney(order.shipping)}</dd>
                 </div>
                 <div class="flex items-baseline justify-between pt-2 text-[16px] font-semibold">
@@ -358,29 +358,29 @@ export function Checkout() {
 
             <div class="mt-8 flex flex-wrap items-center gap-3">
               <a
-                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440]"
+                class="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[var(--accent)] px-6 py-3 text-[14px] font-medium text-[var(--button-ink)] transition-colors duration-200 hover:bg-[var(--accent-strong)]"
                 href={buildWhatsappUrl(settings.whatsapp, orderMessage)}
                 target="_blank"
                 rel="noopener"
               >
-                <Icon name="whatsapp" class="h-[1.15em] w-[1.15em]" /> Enviar pedido por WhatsApp
+                <Icon name="whatsapp" class="h-[1.15em] w-[1.15em]" /> Enviar por WhatsApp
               </a>
-              <Link class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]" to="/">
+              <Link class="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--ink-15)] px-6 py-3 text-[13.5px] font-medium transition hover:border-[var(--ink)]" to="/">
                 Volver a la tienda
               </Link>
             </div>
           </section>
         ) : productsQuery === undefined ? (
-          <p class="py-16 text-center text-[14px] text-[#6f675f]">Cargando tu selección…</p>
+          <p class="py-16 text-center text-[14px] text-[var(--muted)]">Cargando tu selección…</p>
         ) : lines.length === 0 ? (
           <section class="mx-auto max-w-[560px] py-16 text-center">
             <h1 class="text-[clamp(2.2rem,5vw,3.2rem)] font-semibold leading-none" style={DISPLAY_FONT}>
               Tu selección está vacía.
             </h1>
-            <p class="mt-4 text-[14px] leading-relaxed text-[#6f675f]">
+            <p class="mt-4 text-[14px] leading-relaxed text-[var(--muted)]">
               Agrega una o varias piezas antes de finalizar la compra.
             </p>
-            <Link class="mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9]" to="/">
+            <Link class="mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--accent)] px-6 py-3 text-[13.5px] font-medium text-[var(--button-ink)]" to="/">
               Ver la colección
             </Link>
           </section>
@@ -389,7 +389,7 @@ export function Checkout() {
             <h1 class="text-[clamp(2.6rem,5.6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT}>
               Finalizar compra
             </h1>
-            <p class="mt-3 max-w-[52ch] text-[14px] leading-relaxed text-[#6f675f]">
+            <p class="mt-3 max-w-[52ch] text-[14px] leading-relaxed text-[var(--muted)]">
               Completa tus datos de envío y elige cómo pagar. Los pagos son de demostración: no se cobra nada.
             </p>
 
@@ -522,7 +522,7 @@ export function Checkout() {
                       />
                     </div>
                   </div>
-                  <p class="mt-3 text-[11px] leading-relaxed text-[#6f675f]">
+                  <p class="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
                     Guardamos estos datos solo en este navegador para tu próxima compra.
                   </p>
                 </section>
@@ -536,8 +536,8 @@ export function Checkout() {
                       <button
                         class={`rounded-[2px] border px-4 py-3 text-left transition ${
                           method === item.id
-                            ? "border-[#96684f] bg-[#96684f]/5"
-                            : "border-[#3f3a34]/15 hover:border-[#3f3a34]/40"
+                            ? "border-[var(--accent)] bg-[var(--accent-5)]"
+                            : "border-[var(--ink-15)] hover:border-[var(--ink-40)]"
                         }`}
                         type="button"
                         aria-pressed={method === item.id}
@@ -548,7 +548,7 @@ export function Checkout() {
                         key={item.id}
                       >
                         <span class="block text-[13.5px] font-medium">{item.label}</span>
-                        <span class="mt-0.5 block text-[11px] text-[#6f675f]">{item.hint}</span>
+                        <span class="mt-0.5 block text-[11px] text-[var(--muted)]">{item.hint}</span>
                       </button>
                     ))}
                   </div>
@@ -612,25 +612,25 @@ export function Checkout() {
                           maxLength={4}
                         />
                       </div>
-                      <p class="sm:col-span-2 text-[11px] leading-relaxed text-[#6f675f]">
+                      <p class="sm:col-span-2 text-[11px] leading-relaxed text-[var(--muted)]">
                         Pago de demostración. No uses datos reales: la tarjeta no se guarda ni se envía a ningún lado.
                       </p>
                     </div>
                   ) : method === "paypal" ? (
-                    <p class="mt-5 rounded-[2px] border border-[#3f3a34]/15 bg-[#fffdfb] px-4 py-3 text-[12.5px] leading-relaxed text-[#6f675f]">
+                    <p class="mt-5 rounded-[2px] border border-[var(--ink-15)] bg-[var(--card)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--muted)]">
                       Al confirmar se simula el pago con PayPal. No se abre una ventana ni se realiza ningún cargo.
                     </p>
                   ) : (
-                    <p class="mt-5 rounded-[2px] border border-[#3f3a34]/15 bg-[#fffdfb] px-4 py-3 text-[12.5px] leading-relaxed text-[#6f675f]">
+                    <p class="mt-5 rounded-[2px] border border-[var(--ink-15)] bg-[var(--card)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--muted)]">
                       Al confirmar, tu pedido queda reservado y te compartimos los datos bancarios por WhatsApp para la transferencia o el depósito (SPEI).
                     </p>
                   )}
                 </section>
 
-                {error ? <p class="text-[13px] text-[#9a3a2b]" role="alert">{error}</p> : null}
+                {error ? <p class="text-[13px] text-[var(--danger)]" role="alert">{error}</p> : null}
 
                 <button
-                  class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#96684f] px-6 py-3.5 text-[14px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440] disabled:opacity-50"
+                  class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3.5 text-[14px] font-medium text-[var(--button-ink)] transition hover:bg-[var(--accent-strong)] disabled:opacity-50"
                   type="submit"
                   disabled={processing}
                 >
@@ -640,16 +640,16 @@ export function Checkout() {
                       ? `Confirmar pedido · ${formatMoney(total)} MXN`
                       : `Pagar ${formatMoney(total)} MXN`}
                 </button>
-                <p class="-mt-4 text-center text-[11px] text-[#6f675f]">
+                <p class="-mt-4 text-center text-[11px] text-[var(--muted)]">
                   Pago seguro de demostración. No se realizan cargos reales.
                 </p>
               </form>
 
               <aside class="h-fit lg:sticky lg:top-24">
-                <div class="border border-[#3f3a34]/15 bg-[#fffdfb] p-5 sm:p-6">
+                <div class="border border-[var(--ink-15)] bg-[var(--card)] p-5 sm:p-6">
                   <div class="flex items-baseline justify-between gap-4">
                     <h2 class="text-[24px] font-semibold leading-none" style={DISPLAY_FONT}>Tu pedido</h2>
-                    <Link class="text-[11.5px] text-[#6f675f] underline underline-offset-4 hover:text-[#3f3a34]" to="/">
+                    <Link class="text-[11.5px] text-[var(--muted)] underline underline-offset-4 hover:text-[var(--ink)]" to="/">
                       Editar
                     </Link>
                   </div>
@@ -659,7 +659,7 @@ export function Checkout() {
                         <OrderThumb src={line.product.imageUrl} />
                         <div class="flex min-w-0 flex-1 flex-col">
                           <p class="text-[15px] font-semibold leading-tight" style={DISPLAY_FONT}>{line.product.name}</p>
-                          <p class="mt-1 text-[11.5px] text-[#6f675f]">
+                          <p class="mt-1 text-[11.5px] text-[var(--muted)]">
                             {line.qty} × {formatMoney(line.product.price)}
                           </p>
                         </div>
@@ -687,30 +687,30 @@ export function Checkout() {
                     }}
                     onRemove={removePromo}
                   />
-                  <div class="mt-5 space-y-2 border-t border-[#3f3a34]/15 pt-4 text-[13px]">
+                  <div class="mt-5 space-y-2 border-t border-[var(--ink-15)] pt-4 text-[13px]">
                     <div class="flex items-baseline justify-between">
-                      <span class="text-[#6f675f]">Subtotal</span>
+                      <span class="text-[var(--muted)]">Subtotal</span>
                       <span class="font-medium">{formatMoney(subtotal)}</span>
                     </div>
                     {discount > 0 ? (
                       <div class="flex items-baseline justify-between">
-                        <span class="text-[#6f675f]">Descuento ({promotion?.code})</span>
-                        <span class="font-medium text-[#96684f]">−{formatMoney(discount)}</span>
+                        <span class="text-[var(--muted)]">Descuento ({promotion?.code})</span>
+                        <span class="font-medium text-[var(--accent)]">−{formatMoney(discount)}</span>
                       </div>
                     ) : null}
                     <div class="flex items-baseline justify-between">
-                      <span class="text-[#6f675f]">Envío</span>
+                      <span class="text-[var(--muted)]">Envío</span>
                       <span class="font-medium">{shipping === 0 ? "Gratis" : formatMoney(shipping)}</span>
                     </div>
                     {shipping > 0 && freeFrom > 0 && netSubtotal < freeFrom ? (
-                      <p class="text-[11px] leading-relaxed text-[#6f675f]">
+                      <p class="text-[11px] leading-relaxed text-[var(--muted)]">
                         Te faltan {formatMoney(freeFrom - netSubtotal)} para envío gratis.
                       </p>
                     ) : null}
-                    <div class="flex items-baseline justify-between border-t border-[#3f3a34]/15 pt-3">
-                      <span class="text-[11px] uppercase tracking-[0.14em] text-[#6f675f]">Total</span>
+                    <div class="flex items-baseline justify-between border-t border-[var(--ink-15)] pt-3">
+                      <span class="text-[12px] text-[var(--muted)]">Total</span>
                       <span class="text-[24px] font-semibold leading-none" style={DISPLAY_FONT}>
-                        {formatMoney(total)} <span class="text-[10.5px] font-normal text-[#6f675f]" style={SANS_FONT}>MXN</span>
+                        {formatMoney(total)} <span class="text-[10.5px] font-normal text-[var(--muted)]" style={SANS_FONT}>MXN</span>
                       </span>
                     </div>
                   </div>
