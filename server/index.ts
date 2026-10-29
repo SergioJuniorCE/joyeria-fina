@@ -1,10 +1,14 @@
-import { boolean, capsule, endpoint, json, mutation, number, query, string, table } from "lakebed/server";
+import { action, boolean, capsule, endpoint, json, mutation, number, query, string, table } from "lakebed/server";
 import {
   DEFAULT_SETTINGS,
   SETTINGS_KEYS,
+  cleanPromoCode,
   sanitizeProduct,
+  sanitizePromotion,
   sanitizeSettings,
   type ProductInput,
+  type PromotionInput,
+  type PromotionKind,
   type SiteSettings
 } from "../shared/config";
 
@@ -64,6 +68,14 @@ export default capsule({
       key: string(),
       value: string()
     }).index("by_key", ["key"]),
+
+    promotions: table({
+      code: string(),
+      kind: string(),
+      value: number(),
+      minSubtotal: number().default(0),
+      active: boolean().default(true)
+    }).index("by_code", ["code"]),
 
     adminSessions: table({
       token: string(),
@@ -129,6 +141,34 @@ export default capsule({
           available: row.available,
           featured: row.featured,
           position: row.position
+        }))
+      };
+    }),
+
+    adminPromotions: query(async (ctx, token: string) => {
+      if (!token) return { authorized: false, promotions: [] as PromotionInput[] };
+
+      const session = await ctx.db.adminSessions
+        .withIndex("by_token", (q) => q.eq("token", token))
+        .first();
+
+      if (!session || session.expiresAt <= Date.now()) {
+        return { authorized: false, promotions: [] as PromotionInput[] };
+      }
+
+      const rows = await ctx.db.promotions
+        .withIndex("by_code", (q) => q.gte("code", ""))
+        .collect();
+
+      return {
+        authorized: true,
+        promotions: rows.map((row) => ({
+          id: row.id,
+          code: row.code,
+          kind: (row.kind === "fixed" ? "fixed" : "percent") as PromotionKind,
+          value: row.value,
+          minSubtotal: row.minSubtotal,
+          active: row.active
         }))
       };
     })
@@ -240,6 +280,88 @@ export default capsule({
       }
 
       return { ok: true };
+    }),
+
+    adminSavePromotion: mutation(async (ctx, args: { token: string; promotion: PromotionInput }) => {
+      const token = typeof args?.token === "string" ? args.token : "";
+      const session = token
+        ? await ctx.db.adminSessions.withIndex("by_token", (q) => q.eq("token", token)).first()
+        : null;
+
+      if (!session || session.expiresAt <= Date.now()) {
+        return { ok: false, error: "Tu sesión expiró. Vuelve a entrar." };
+      }
+
+      const promotion = sanitizePromotion(args?.promotion);
+      if (!promotion) {
+        return { ok: false, error: "Revisa el código y el descuento." };
+      }
+
+      const duplicate = await ctx.db.promotions
+        .withIndex("by_code", (q) => q.eq("code", promotion.code))
+        .first();
+      if (duplicate && duplicate.id !== promotion.id) {
+        return { ok: false, error: "Ya existe una promoción con ese código." };
+      }
+
+      const values = {
+        code: promotion.code,
+        kind: promotion.kind,
+        value: promotion.value,
+        minSubtotal: promotion.minSubtotal,
+        active: promotion.active
+      };
+
+      if (promotion.id) {
+        const existing = await ctx.db.promotions.get(promotion.id);
+        if (!existing) return { ok: false, error: "Esa promoción ya no existe." };
+        await ctx.db.promotions.update(promotion.id, values);
+        return { ok: true, id: promotion.id };
+      }
+
+      const row = await ctx.db.promotions.insert(values);
+      return { ok: true, id: row.id };
+    }),
+
+    adminDeletePromotion: mutation(async (ctx, args: { token: string; id: string }) => {
+      const token = typeof args?.token === "string" ? args.token : "";
+      const session = token
+        ? await ctx.db.adminSessions.withIndex("by_token", (q) => q.eq("token", token)).first()
+        : null;
+
+      if (!session || session.expiresAt <= Date.now()) {
+        return { ok: false, error: "Tu sesión expiró. Vuelve a entrar." };
+      }
+
+      const id = typeof args?.id === "string" ? args.id : "";
+      if (!id) return { ok: false, error: "Falta la promoción." };
+      await ctx.db.promotions.delete(id);
+      return { ok: true };
+    })
+  },
+
+  actions: {
+    applyPromotion: action(async (ctx, code: string) => {
+      const normalized = cleanPromoCode(code);
+      if (!normalized) return { ok: false, error: "Escribe un código." };
+
+      const row = await ctx.db.promotions
+        .withIndex("by_code", (q) => q.eq("code", normalized))
+        .first();
+
+      if (!row || !row.active) {
+        return { ok: false, error: "Ese código no existe o ya no está activo." };
+      }
+
+      return {
+        ok: true,
+        promotion: {
+          code: row.code,
+          kind: (row.kind === "fixed" ? "fixed" : "percent") as PromotionKind,
+          value: row.value,
+          minSubtotal: row.minSubtotal
+        }
+      };
     })
   },
 
@@ -269,6 +391,7 @@ export default capsule({
       const payload = await req.json<{
         products?: unknown[];
         settings?: unknown;
+        promotions?: unknown[];
         replace?: boolean;
       }>();
 
@@ -280,38 +403,48 @@ export default capsule({
         }
       }
 
-      if (products.length === 0) {
-        return json({ ok: false, error: "no-products" }, { status: 400 });
-      }
-
-      const existing = await ctx.db.products
-        .withIndex("by_position", (q) => q.gte("position", 0))
-        .count();
-
-      if (existing > 0 && payload.replace !== true) {
-        return json({ ok: false, error: "already-seeded", count: existing }, { status: 409 });
-      }
-
-      if (payload.replace === true && existing > 0) {
-        const rows = await ctx.db.products
-          .withIndex("by_position", (q) => q.gte("position", 0))
-          .collect();
-        for (const row of rows) {
-          await ctx.db.products.delete(row.id);
+      const promotions: PromotionInput[] = [];
+      if (Array.isArray(payload.promotions)) {
+        for (const raw of payload.promotions) {
+          const promotion = sanitizePromotion(raw);
+          if (promotion) promotions.push(promotion);
         }
       }
 
-      for (const product of products) {
-        await ctx.db.products.insert({
-          name: product.name,
-          price: product.price,
-          collection: product.collection,
-          imageUrl: product.imageUrl,
-          description: product.description,
-          available: product.available,
-          featured: product.featured,
-          position: product.position
-        });
+      if (products.length === 0 && promotions.length === 0) {
+        return json({ ok: false, error: "no-products" }, { status: 400 });
+      }
+
+      if (products.length > 0) {
+        const existing = await ctx.db.products
+          .withIndex("by_position", (q) => q.gte("position", 0))
+          .count();
+
+        if (existing > 0 && payload.replace !== true) {
+          return json({ ok: false, error: "already-seeded", count: existing }, { status: 409 });
+        }
+
+        if (payload.replace === true && existing > 0) {
+          const rows = await ctx.db.products
+            .withIndex("by_position", (q) => q.gte("position", 0))
+            .collect();
+          for (const row of rows) {
+            await ctx.db.products.delete(row.id);
+          }
+        }
+
+        for (const product of products) {
+          await ctx.db.products.insert({
+            name: product.name,
+            price: product.price,
+            collection: product.collection,
+            imageUrl: product.imageUrl,
+            description: product.description,
+            available: product.available,
+            featured: product.featured,
+            position: product.position
+          });
+        }
       }
 
       const settings = sanitizeSettings(payload.settings);
@@ -321,7 +454,25 @@ export default capsule({
         }
       }
 
-      return json({ ok: true, count: products.length });
+      for (const promotion of promotions) {
+        const existing = await ctx.db.promotions
+          .withIndex("by_code", (q) => q.eq("code", promotion.code))
+          .first();
+        const values = {
+          code: promotion.code,
+          kind: promotion.kind,
+          value: promotion.value,
+          minSubtotal: promotion.minSubtotal,
+          active: promotion.active
+        };
+        if (existing) {
+          await ctx.db.promotions.update(existing.id, values);
+        } else {
+          await ctx.db.promotions.insert(values);
+        }
+      }
+
+      return json({ ok: true, count: products.length, promotions: promotions.length });
     })
   }
 });

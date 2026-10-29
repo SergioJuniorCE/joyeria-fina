@@ -20,6 +20,7 @@ Guías para operar el catálogo, las fotos y el deploy de Joyería Fina en Lakeb
 - [Catálogo y panel](catalog.md) — productos, precios, colecciones, textos, contraseña del panel.
 - [Fotos e imágenes](images.md) — agregar, reemplazar y publicar fotos de productos, hero e historia.
 - [Problemas comunes](troubleshooting.md) — errores típicos y cómo resolverlos.
+- [Tema visual](theme.md) — paleta, tipografías y dónde cambiarlas.
 
 ## Mapa del repo
 

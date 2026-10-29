@@ -63,6 +63,8 @@ export type SiteSettings = {
   heroImageUrl: string;
   storyImageUrl: string;
   shippingNote: string;
+  shippingFlat: string;
+  shippingFreeFrom: string;
   paymentNote: string;
 };
 
@@ -75,10 +77,69 @@ export const SETTINGS_KEYS = [
   'heroImageUrl',
   'storyImageUrl',
   'shippingNote',
+  'shippingFlat',
+  'shippingFreeFrom',
   'paymentNote'
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];
+
+export type PromotionKind = 'percent' | 'fixed';
+
+export type PromotionInput = {
+  id?: string;
+  code: string;
+  kind: PromotionKind;
+  value: number;
+  minSubtotal: number;
+  active: boolean;
+};
+
+export type AppliedPromotion = {
+  code: string;
+  kind: PromotionKind;
+  value: number;
+  minSubtotal: number;
+};
+
+export function cleanPromoCode(value: unknown): string {
+  return typeof value === 'string'
+    ? value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 24)
+    : '';
+}
+
+export function sanitizePromotion(input: unknown): PromotionInput | null {
+  if (!input || typeof input !== 'object') return null;
+  const raw = input as Record<string, unknown>;
+  const code = cleanPromoCode(raw.code);
+  const kind: PromotionKind = raw.kind === 'fixed' ? 'fixed' : 'percent';
+  const value = Math.round(Number(raw.value) || 0);
+
+  if (!code || value <= 0) return null;
+  if (kind === 'percent' && value > 100) return null;
+  if (kind === 'fixed' && value > 1000000) return null;
+
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id : undefined,
+    code,
+    kind,
+    value,
+    minSubtotal: Math.max(0, Math.round(Number(raw.minSubtotal) || 0)),
+    active: raw.active !== false
+  };
+}
+
+export function discountFor(
+  subtotal: number,
+  promotion: Pick<PromotionInput, 'kind' | 'value'>
+): number {
+  if (subtotal <= 0) return 0;
+  const raw =
+    promotion.kind === 'percent'
+      ? (subtotal * Math.min(100, Math.max(0, promotion.value))) / 100
+      : promotion.value;
+  return Math.min(subtotal, Math.max(0, Math.round(raw)));
+}
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   whatsapp: '526444616545',
@@ -89,6 +150,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   heroImageUrl: '',
   storyImageUrl: '',
   shippingNote: 'Envíos a todo México.',
+  shippingFlat: '150',
+  shippingFreeFrom: '1500',
   paymentNote: 'Transferencia, depósito bancario y efectivo.'
 };
 
@@ -152,6 +215,8 @@ export function sanitizeSettings(input: unknown): Partial<SiteSettings> | null {
       result[key] = value.replace(/[^\d]/g, '').slice(0, 20);
     } else if (key === 'instagram') {
       result[key] = value.replace(/^@+/, '').replace(/[^a-zA-Z0-9._]/g, '').slice(0, 80);
+    } else if (key === 'shippingFlat' || key === 'shippingFreeFrom') {
+      result[key] = String(Math.min(1000000, Math.max(0, Math.round(Number(value) || 0))));
     } else {
       result[key] = value;
     }
@@ -180,6 +245,26 @@ export function formatMoney(value: number): string {
     currency: 'MXN',
     maximumFractionDigits: 0
   }).format(value);
+}
+
+export function parseShipping(settings: Pick<SiteSettings, 'shippingFlat' | 'shippingFreeFrom'>): {
+  flat: number;
+  freeFrom: number;
+} {
+  return {
+    flat: Math.max(0, Math.round(Number(settings.shippingFlat) || 0)),
+    freeFrom: Math.max(0, Math.round(Number(settings.shippingFreeFrom) || 0))
+  };
+}
+
+export function shippingCostFor(
+  subtotal: number,
+  settings: Pick<SiteSettings, 'shippingFlat' | 'shippingFreeFrom'>
+): number {
+  if (subtotal <= 0) return 0;
+  const { flat, freeFrom } = parseShipping(settings);
+  if (freeFrom > 0 && subtotal >= freeFrom) return 0;
+  return flat;
 }
 
 export function normalizeSearch(value: string): string {

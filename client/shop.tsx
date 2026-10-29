@@ -9,10 +9,17 @@ import {
   formatMoney,
   formatPhone,
   normalizeSearch,
+  parseShipping,
+  shippingCostFor,
+  discountFor,
+  type AppliedPromotion,
   type SiteSettings
 } from "../shared/config";
 import { client } from "./api";
-import { Brand, DISPLAY_FONT, Icon, Modal, SANS_FONT, Toast, useFonts } from "./ui";
+import { MAX_QTY, readCart, writeCart, type CartLine } from "./cart";
+import { PromoField } from "./promo-field";
+import { readPromo, writePromo } from "./promo";
+import { Brand, DISPLAY_FONT, Icon, Modal, SANS_FONT, SCRIPT_FONT, Toast, useFonts } from "./ui";
 
 type Product = {
   id: string;
@@ -25,25 +32,7 @@ type Product = {
   position: number;
 };
 
-type CartLine = { id: string; qty: number };
-
-const CART_KEY = "jf-lakebed-cart-v1";
-const MAX_QTY = 10;
 const PAGE_SIZE = 12;
-
-function readCart(): CartLine[] {
-  try {
-    const raw = localStorage.getItem(CART_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((line) => line && typeof line.id === "string" && Number.isInteger(line.qty) && line.qty > 0)
-      .map((line) => ({ id: line.id, qty: Math.min(line.qty, MAX_QTY) }));
-  } catch {
-    return [];
-  }
-}
 
 function ProductImage({
   src,
@@ -59,7 +48,7 @@ function ProductImage({
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     return (
-      <span class={`grid place-items-center bg-[#e8e7e1] text-[#565b64] ${className ?? ""}`}>
+      <span class={`grid place-items-center bg-[#f0e6db] text-[#6f675f] ${className ?? ""}`}>
         <Icon name="image" class="h-8 w-8 opacity-50" />
       </span>
     );
@@ -98,29 +87,32 @@ function HeroProducts({
     <section class="relative overflow-hidden" aria-labelledby="hero-title">
       <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 py-10 sm:px-7 sm:py-14 lg:grid-cols-[1.03fr_.97fr] lg:gap-16 lg:px-9 lg:py-20 xl:gap-24">
         <div class="max-w-[560px]">
-          <p class="mb-5 text-[11px] uppercase tracking-[0.2em] text-[#565b64]" style={SANS_FONT}>
+          <p class="mb-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[#a67f6c]" style={SANS_FONT}>
+            <Icon name="sparkle" class="h-3.5 w-3.5" />
             {settings.heroEyebrow}
           </p>
           <h1
             id="hero-title"
-            class="font-semibold leading-[0.98] tracking-[-0.025em]"
+            class="font-semibold leading-[0.98] tracking-[-0.025em] text-[#a67f6c]"
             style={{ ...DISPLAY_FONT, fontSize: "clamp(3rem, 5.8vw, 5rem)" }}
           >
             <span class="block">{firstLine}</span>
-            <span class="mt-1 block font-normal italic leading-[1.08]">{secondLine}</span>
+            <span class="mt-1 block leading-[1.05]" style={{ ...SCRIPT_FONT, fontSize: "clamp(3rem, 6vw, 5.2rem)" }}>
+              {secondLine}
+            </span>
           </h1>
-          <p class="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[#565b64] sm:text-[17px]">
+          <p class="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[#6f675f] sm:text-[17px]">
             {settings.heroSubtext}
           </p>
           <div class="mt-8 flex flex-wrap items-center gap-3">
             <a
-              class="inline-flex min-h-11 items-center justify-center rounded-full bg-[#203a6b] px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#f7f6f1] transition hover:bg-[#16294d] active:scale-[0.99]"
+              class="inline-flex min-h-11 items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#fffdf9] transition hover:bg-[#7a5440] active:scale-[0.99]"
               href="#coleccion"
             >
               Ver la colección
             </a>
             <a
-              class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#14171c]/80 px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#14171c] transition hover:bg-[#14171c] hover:text-[#f2f1ec] active:scale-[0.99]"
+              class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#3f3a34]/80 px-6 py-3 text-[13.5px] font-medium leading-none tracking-[0.02em] text-[#3f3a34] transition hover:bg-[#3f3a34] hover:text-[#f7f1e9] active:scale-[0.99]"
               href="#como-comprar"
             >
               Cómo comprar
@@ -129,8 +121,8 @@ function HeroProducts({
         </div>
 
         <div class="relative mx-auto w-full max-w-[540px] lg:mr-0">
-          <span class="absolute -bottom-4 -left-4 h-3/4 w-3/4 border border-[#14171c]/15 bg-[#e8e7e1]/70" aria-hidden="true" />
-          <figure class="relative aspect-[4/5] overflow-hidden rounded-b-[2px] rounded-t-[999px] border border-[#14171c]/10 bg-[#e8e7e1]">
+          <span class="absolute -bottom-4 -left-4 h-3/4 w-3/4 border border-[#3f3a34]/15 bg-[#f0e6db]/70" aria-hidden="true" />
+          <figure class="relative aspect-[4/5] overflow-hidden rounded-b-[2px] rounded-t-[999px] border border-[#3f3a34]/10 bg-[#f0e6db]">
             {heroImage ? (
               <ProductImage
                 src={heroImage}
@@ -139,14 +131,14 @@ function HeroProducts({
                 loading="eager"
               />
             ) : (
-              <span class="grid h-full w-full place-items-center text-[#565b64]">
+              <span class="grid h-full w-full place-items-center text-[#6f675f]">
                 <Icon name="image" class="h-12 w-12 opacity-30" />
               </span>
             )}
           </figure>
           {heroProduct ? (
             <button
-              class="absolute -left-2 bottom-5 w-[132px] border border-[#14171c]/16 bg-[#faf9f5] p-2 text-left shadow-[0_24px_50px_-30px_rgba(20,23,28,.55)] transition hover:-translate-y-1 sm:-left-8 sm:bottom-8 sm:w-[172px] sm:p-2.5"
+              class="absolute -left-2 bottom-5 w-[132px] border border-[#3f3a34]/16 bg-[#fffdfb] p-2 text-left shadow-[0_24px_50px_-30px_rgba(20,23,28,.55)] transition hover:-translate-y-1 sm:-left-8 sm:bottom-8 sm:w-[172px] sm:p-2.5"
               type="button"
               onClick={() => onQuick(heroProduct.id)}
               aria-label={`Ver ${heroProduct.name}, ${formatMoney(heroProduct.price)}`}
@@ -175,11 +167,11 @@ function TrustStrip({ settings }: { settings: SiteSettings }) {
   ];
 
   return (
-    <section class="border-y border-[#14171c]/15 bg-[#f2f1ec]" aria-label="Información de compra">
-      <div class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-x-5 gap-y-3 px-5 py-4 text-[12px] text-[#565b64] sm:flex sm:items-center sm:justify-between sm:px-7 sm:py-5 lg:px-9">
+    <section class="border-y border-[#3f3a34]/15 bg-white" aria-label="Información de compra">
+      <div class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-x-5 gap-y-3 px-5 py-4 text-[12px] text-[#3f3a34] sm:flex sm:items-center sm:justify-between sm:px-7 sm:py-5 lg:px-9">
         {items.map((item) => (
           <span class="inline-flex items-center gap-2" key={item.label}>
-            <Icon name={item.icon} class="h-4 w-4 text-[#203a6b]" />
+            <Icon name={item.icon} class="h-4 w-4 text-[#96684f]" />
             {item.label}
           </span>
         ))}
@@ -188,10 +180,22 @@ function TrustStrip({ settings }: { settings: SiteSettings }) {
   );
 }
 
-function ProductCard({ product, onQuick, onAdd }: { product: Product; onQuick: (id: string) => void; onAdd: (id: string) => void }) {
+function ProductCard({
+  product,
+  qty,
+  onQuick,
+  onAdd,
+  onQty
+}: {
+  product: Product;
+  qty: number;
+  onQuick: (id: string) => void;
+  onAdd: (id: string) => void;
+  onQty: (id: string, delta: number) => void;
+}) {
   return (
-    <article class="group flex flex-col">
-      <div class="relative aspect-[7/8] overflow-hidden rounded-[2px] bg-[#e8e7e1]">
+    <article class="group flex flex-col border border-[#3f3a34]/10 bg-white p-2 shadow-[0_16px_36px_-32px_rgba(75,56,42,0.55)] sm:p-2.5">
+      <div class="relative aspect-[7/8] overflow-hidden bg-[#f0e6db]">
         <button class="block h-full w-full cursor-zoom-in" type="button" onClick={() => onQuick(product.id)} aria-label={`Ver ${product.name}`}>
           <ProductImage
             src={product.imageUrl}
@@ -199,26 +203,58 @@ function ProductCard({ product, onQuick, onAdd }: { product: Product; onQuick: (
             class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
           />
         </button>
-        <button
-          class="absolute bottom-2 right-2 grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15 bg-[#faf9f5]/95 text-[#14171c] shadow-sm transition duration-300 hover:bg-white active:scale-95 sm:bottom-3 sm:right-3 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
-          type="button"
-          onClick={() => onAdd(product.id)}
-          aria-label={`Añadir ${product.name} a la selección`}
-        >
-          <Icon name="bag" class="h-[18px] w-[18px]" />
-        </button>
+        {qty > 0 ? (
+          <div class="absolute bottom-2 right-2 flex items-center rounded-full border border-[#3f3a34]/15 bg-[#fffdfb]/95 p-1 shadow-sm sm:bottom-3 sm:right-3">
+            <button
+              class="grid h-8 w-8 place-items-center rounded-full text-[#3f3a34] transition hover:bg-[#f0e6db] active:scale-95"
+              type="button"
+              onClick={() => onQty(product.id, -1)}
+              aria-label={`Quitar uno de ${product.name}`}
+            >
+              <Icon name="minus" class="h-3.5 w-3.5" />
+            </button>
+            <span
+              class="inline-flex min-w-9 items-center justify-center gap-1 px-1 text-[12.5px] font-semibold tabular-nums"
+              aria-label={`${qty} en tu selección`}
+              aria-live="polite"
+            >
+              <Icon name="bag" class="h-[15px] w-[15px]" />
+              {qty}
+            </span>
+            <button
+              class="grid h-8 w-8 place-items-center rounded-full text-[#3f3a34] transition hover:bg-[#f0e6db] active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent"
+              type="button"
+              onClick={() => onQty(product.id, 1)}
+              disabled={qty >= MAX_QTY}
+              aria-label={`Añadir uno de ${product.name}`}
+            >
+              <Icon name="plus" class="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            class="absolute bottom-2 right-2 grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 bg-[#fffdfb]/95 text-[#3f3a34] shadow-sm transition duration-300 hover:bg-[#fffdfb] active:scale-95 sm:bottom-3 sm:right-3 sm:translate-y-1 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
+            type="button"
+            onClick={() => onAdd(product.id)}
+            aria-label={`Añadir ${product.name} a la selección`}
+          >
+            <Icon name="bag" class="h-[18px] w-[18px]" />
+          </button>
+        )}
+        <span class="pointer-events-none absolute left-2 top-2 grid h-14 w-14 place-items-center rounded-full bg-[#fffdfb] px-1 text-center text-[11.5px] font-medium leading-tight text-[#3f3a34] shadow-sm sm:left-3 sm:top-3 sm:h-16 sm:w-16 sm:text-[13px]">
+          {formatMoney(product.price)}
+        </span>
       </div>
-      <div class="pt-3">
-        <p class="text-[11px] text-[#565b64]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
+      <div class="flex flex-1 flex-col px-1 pb-1 pt-3">
+        <p class="text-[10.5px] uppercase tracking-[0.16em] text-[#96702f]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
         <button
-          class="mt-1 block text-left text-[19px] font-semibold leading-[1.15] tracking-[-0.01em] transition hover:text-[#203a6b] sm:text-[21px]"
+          class="mt-1 block text-left text-[17px] font-medium uppercase leading-[1.15] tracking-[0.02em] text-[#3f3a34] transition hover:text-[#96684f] sm:text-[19px]"
           style={DISPLAY_FONT}
           type="button"
           onClick={() => onQuick(product.id)}
         >
           {product.name}
         </button>
-        <p class="mt-1 text-[13px] font-medium">{formatMoney(product.price)}</p>
       </div>
     </article>
   );
@@ -242,34 +278,36 @@ function QuickView({
       {product ? (
         <div class="relative grid md:grid-cols-2">
           <button
-            class="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15 bg-[#f2f1ec]/90 text-[#14171c] transition hover:border-[#14171c]"
+            class="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 bg-[#f7f1e9]/90 text-[#3f3a34] transition hover:border-[#3f3a34]"
             type="button"
             onClick={onClose}
             aria-label="Cerrar vista del producto"
           >
             <Icon name="x" />
           </button>
-          <div class="bg-[#e8e7e1]">
-            <ProductImage src={product.imageUrl} alt={product.name} class="aspect-[7/8] h-full w-full object-cover" />
+          <div class="bg-[#f0e6db]">
+            <ProductImage src={product.imageUrl} alt={product.name} class="aspect-[7/8] max-h-[48vh] w-full object-cover md:h-full md:max-h-none" />
           </div>
-          <div class="p-6 sm:p-8 lg:p-10">
-            <p class="text-[11px] uppercase tracking-[0.16em] text-[#565b64]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
-            <h2 class="mt-2 text-[clamp(2rem,3.4vw,2.8rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT}>
+          <div class="flex flex-col p-6 sm:p-8 lg:p-10">
+            <p class="text-[11px] uppercase tracking-[0.16em] text-[#96702f]">{CATEGORY_LABEL[product.collection] ?? "Joyería"}</p>
+            <h2 class="mt-2 text-[clamp(2rem,3.4vw,2.8rem)] font-medium uppercase leading-[1.02] tracking-[0.01em]" style={DISPLAY_FONT}>
               {product.name}
             </h2>
             <p class="mt-3 text-[15px] font-medium">{formatMoney(product.price)} MXN</p>
-            <p class="mt-4 max-w-[40ch] text-[14.5px] leading-relaxed text-[#565b64]">
-              {product.description || CATEGORY_DESC[product.collection] || "Broquel en oro de 10 kt. Se vende por par."}
-            </p>
-            <ul class="mt-6 space-y-2 text-[13.5px] text-[#565b64]">
-              <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#203a6b]" /> Oro de 10 kt</li>
-              <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#203a6b]" /> Se vende por par</li>
-              <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#203a6b]" /> Envío a todo México</li>
-            </ul>
-            <div class="mt-8 flex flex-wrap items-center gap-3">
-              <div class="inline-flex h-11 items-center rounded-full border border-[#14171c]/15" aria-label="Cantidad">
+            <div class="order-4 mt-4 md:order-none">
+              <p class="max-w-[40ch] text-[14.5px] leading-relaxed text-[#6f675f]">
+                {product.description || CATEGORY_DESC[product.collection] || "Broquel en oro de 10 kt. Se vende por par."}
+              </p>
+              <ul class="mt-6 space-y-2 text-[13.5px] text-[#6f675f]">
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Oro de 10 kt</li>
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Se vende por par</li>
+                <li class="flex items-center gap-2"><Icon name="check" class="h-4 w-4 text-[#96684f]" /> Envío a todo México</li>
+              </ul>
+            </div>
+            <div class="order-2 mt-6 flex flex-wrap items-center gap-3 md:order-none md:mt-8">
+              <div class="inline-flex h-11 items-center rounded-full border border-[#3f3a34]/15" aria-label="Cantidad">
                 <button
-                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#203a6b] disabled:opacity-30"
+                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30"
                   type="button"
                   onClick={() => onQty(qty - 1)}
                   disabled={qty <= 1}
@@ -277,9 +315,31 @@ function QuickView({
                 >
                   <Icon name="minus" class="h-3.5 w-3.5" />
                 </button>
-                <span class="w-8 text-center text-[14px]">{qty}</span>
+                <input
+                  class="w-8 bg-transparent text-center text-[14px] tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_QTY}
+                  value={qty}
+                  aria-label="Cantidad"
+                  onFocus={(event) => (event.target as HTMLInputElement).select()}
+                  onChange={(event) => {
+                    const input = event.target as HTMLInputElement;
+                    if (input.value === "") return;
+                    const parsed = Number(input.value);
+                    if (!Number.isFinite(parsed)) return;
+                    const next = Math.min(MAX_QTY, Math.max(1, Math.trunc(parsed)));
+                    if (next !== qty) onQty(next);
+                    if (String(next) !== input.value) input.value = String(next);
+                  }}
+                  onBlur={(event) => {
+                    const input = event.target as HTMLInputElement;
+                    if (input.value === "") input.value = String(qty);
+                  }}
+                />
                 <button
-                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#203a6b] disabled:opacity-30"
+                  class="grid h-11 w-10 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30"
                   type="button"
                   onClick={() => onQty(qty + 1)}
                   disabled={qty >= MAX_QTY}
@@ -289,7 +349,7 @@ function QuickView({
                 </button>
               </div>
               <button
-                class="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[#203a6b] px-6 py-3 text-[13.5px] font-medium text-[#f7f6f1] transition hover:bg-[#16294d] sm:flex-none"
+                class="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440] sm:flex-none"
                 type="button"
                 onClick={onAdd}
               >
@@ -311,7 +371,17 @@ function CartDrawer({
   onQty,
   onRemove,
   onCheckout,
-  whatsapp
+  whatsapp,
+  shipping,
+  freeFrom,
+  discount,
+  promotion,
+  promoCode,
+  promoError,
+  applyingPromo,
+  onPromoCodeChange,
+  onApplyPromo,
+  onRemovePromo
 }: {
   open: boolean;
   lines: CartLine[];
@@ -321,6 +391,16 @@ function CartDrawer({
   onRemove: (id: string) => void;
   onCheckout: () => void;
   whatsapp: string;
+  shipping: number;
+  freeFrom: number;
+  discount: number;
+  promotion: AppliedPromotion | null;
+  promoCode: string;
+  promoError: string;
+  applyingPromo: boolean;
+  onPromoCodeChange: (value: string) => void;
+  onApplyPromo: (event: SubmitEvent) => void;
+  onRemovePromo: () => void;
 }) {
   const detailed = lines
     .map((line) => ({ ...line, product: products.find((product) => product.id === line.id) }))
@@ -331,16 +411,16 @@ function CartDrawer({
 
   return (
     <div
-      class="fixed inset-0 z-50 flex justify-end bg-[#090b0f]/60 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex justify-end bg-[#2f2b26]/60 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <aside class="flex h-full w-full max-w-[440px] flex-col bg-[#f2f1ec] text-[#14171c]" role="dialog" aria-modal="true" aria-label="Tu selección">
-        <div class="flex items-center justify-between border-b border-[#14171c]/15 px-5 py-5 sm:px-6">
+      <aside class="flex h-full w-full max-w-[440px] flex-col bg-[#f7f1e9] text-[#3f3a34]" role="dialog" aria-modal="true" aria-label="Tu selección">
+        <div class="flex items-center justify-between border-b border-[#3f3a34]/15 px-5 py-5 sm:px-6">
           <h2 class="text-[28px] font-semibold leading-none" style={DISPLAY_FONT}>Tu selección</h2>
           <button
-            class="grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15 transition hover:border-[#14171c]"
+            class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 transition hover:border-[#3f3a34]"
             type="button"
             onClick={onClose}
             aria-label="Cerrar selección"
@@ -353,32 +433,54 @@ function CartDrawer({
           {detailed.length === 0 ? (
             <div class="flex min-h-[300px] flex-col items-center justify-center gap-4 text-center">
               <p class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>Tu selección está vacía.</p>
-              <p class="max-w-[28ch] text-[13.5px] leading-relaxed text-[#565b64]">
+              <p class="max-w-[28ch] text-[13.5px] leading-relaxed text-[#6f675f]">
                 Explora la colección y guarda tus piezas favoritas aquí.
               </p>
-              <a class="inline-flex items-center justify-center rounded-full border border-[#14171c]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#14171c]" href="#coleccion" onClick={onClose}>
+              <a class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]" href="#coleccion" onClick={onClose}>
                 Ver la colección
               </a>
             </div>
           ) : (
             detailed.map((line) => (
-              <div class="flex gap-4 border-b border-[#14171c]/15 py-4 first:pt-0" key={line.id}>
-                <ProductImage src={line.product.imageUrl} alt={line.product.name} class="h-[72px] w-16 shrink-0 rounded-[2px] bg-[#e8e7e1] object-cover" />
+              <div class="flex gap-4 border-b border-[#3f3a34]/15 py-4 first:pt-0" key={line.id}>
+                <ProductImage src={line.product.imageUrl} alt={line.product.name} class="h-[72px] w-16 shrink-0 rounded-[2px] bg-[#f0e6db] object-cover" />
                 <div class="flex min-w-0 flex-1 flex-col">
                   <div class="flex items-start justify-between gap-3">
                     <p class="text-[18px] font-semibold leading-tight" style={DISPLAY_FONT}>{line.product.name}</p>
-                    <button class="shrink-0 text-[11px] text-[#565b64] underline underline-offset-4 transition hover:text-[#14171c]" type="button" onClick={() => onRemove(line.id)}>
+                    <button class="shrink-0 text-[11px] text-[#6f675f] underline underline-offset-4 transition hover:text-[#3f3a34]" type="button" onClick={() => onRemove(line.id)}>
                       Quitar
                     </button>
                   </div>
-                  <p class="mt-1 text-[12.5px] text-[#565b64]">{formatMoney(line.product.price)} c/u</p>
+                  <p class="mt-1 text-[12.5px] text-[#6f675f]">{formatMoney(line.product.price)} c/u</p>
                   <div class="mt-auto flex items-center justify-between gap-3 pt-3">
-                    <div class="inline-flex h-9 items-center rounded-full border border-[#14171c]/15">
-                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#203a6b]" type="button" onClick={() => onQty(line.id, -1)} aria-label={`Quitar uno de ${line.product.name}`}>
+                    <div class="inline-flex h-9 items-center rounded-full border border-[#3f3a34]/15">
+                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#96684f]" type="button" onClick={() => onQty(line.id, -1)} aria-label={`Quitar uno de ${line.product.name}`}>
                         <Icon name="minus" class="h-3.5 w-3.5" />
                       </button>
-                      <span class="w-6 text-center text-[12px]">{line.qty}</span>
-                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#203a6b] disabled:opacity-30" type="button" onClick={() => onQty(line.id, 1)} disabled={line.qty >= MAX_QTY} aria-label={`Añadir uno de ${line.product.name}`}>
+                      <input
+                        class="w-8 bg-transparent text-center text-[12px] tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={MAX_QTY}
+                        value={line.qty}
+                        aria-label={`Cantidad de ${line.product.name}`}
+                        onFocus={(event) => (event.target as HTMLInputElement).select()}
+                        onChange={(event) => {
+                          const input = event.target as HTMLInputElement;
+                          if (input.value === "") return;
+                          const parsed = Number(input.value);
+                          if (!Number.isFinite(parsed)) return;
+                          const next = Math.min(MAX_QTY, Math.max(1, Math.trunc(parsed)));
+                          if (next !== line.qty) onQty(line.id, next - line.qty);
+                          if (String(next) !== input.value) input.value = String(next);
+                        }}
+                        onBlur={(event) => {
+                          const input = event.target as HTMLInputElement;
+                          if (input.value === "") input.value = String(line.qty);
+                        }}
+                      />
+                      <button class="grid h-9 w-8 place-items-center rounded-full transition hover:text-[#96684f] disabled:opacity-30" type="button" onClick={() => onQty(line.id, 1)} disabled={line.qty >= MAX_QTY} aria-label={`Añadir uno de ${line.product.name}`}>
                         <Icon name="plus" class="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -390,32 +492,66 @@ function CartDrawer({
           )}
         </div>
 
-        <div class="border-t border-[#14171c]/15 px-5 py-5 sm:px-6">
+        <div class="border-t border-[#3f3a34]/15 px-5 py-5 sm:px-6">
           {detailed.length === 0 ? (
-            <p class="text-center text-[11px] leading-relaxed text-[#565b64]">{whatsapp ? "Pago por transferencia, depósito o efectivo. Envíos a todo México." : ""}</p>
+            <p class="text-center text-[11px] leading-relaxed text-[#6f675f]">{whatsapp ? "Pago por transferencia, depósito o efectivo. Envíos a todo México." : ""}</p>
           ) : (
             <div class="space-y-4">
-              <div class="flex items-baseline justify-between border-b border-[#14171c]/15 pb-4">
-                <span class="text-[11px] uppercase tracking-[0.14em] text-[#565b64]">Subtotal</span>
+              <PromoField
+                value={promoCode}
+                promotion={promotion}
+                discount={discount}
+                error={promoError}
+                applying={applyingPromo}
+                onApply={onApplyPromo}
+                onChange={onPromoCodeChange}
+                onRemove={onRemovePromo}
+              />
+              <div class="space-y-2 border-b border-[#3f3a34]/15 pb-4">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-[12.5px] text-[#6f675f]">Subtotal</span>
+                  <span class="text-[14px] font-medium">{formatMoney(total)}</span>
+                </div>
+                {discount > 0 ? (
+                  <div class="flex items-baseline justify-between">
+                    <span class="text-[12.5px] text-[#6f675f]">Descuento ({promotion?.code})</span>
+                    <span class="text-[14px] font-medium text-[#96684f]">−{formatMoney(discount)}</span>
+                  </div>
+                ) : null}
+                <div class="flex items-baseline justify-between">
+                  <span class="text-[12.5px] text-[#6f675f]">Envío</span>
+                  <span class="text-[14px] font-medium">{shipping === 0 ? "Gratis" : formatMoney(shipping)}</span>
+                </div>
+                {shipping > 0 && freeFrom > 0 && total - discount < freeFrom ? (
+                  <p class="text-[11px] leading-relaxed text-[#6f675f]">
+                    Te faltan {formatMoney(freeFrom - (total - discount))} para envío gratis.
+                  </p>
+                ) : null}
+              </div>
+              <div class="flex items-baseline justify-between">
+                <span class="text-[11px] uppercase tracking-[0.14em] text-[#6f675f]">Total</span>
                 <span class="text-[28px] font-semibold leading-none" style={DISPLAY_FONT}>
-                  {formatMoney(total)} <span class="text-[11px] font-normal text-[#565b64]" style={SANS_FONT}>MXN</span>
+                  {formatMoney(total - discount + shipping)} <span class="text-[11px] font-normal text-[#6f675f]" style={SANS_FONT}>MXN</span>
                 </span>
               </div>
-              <p class="text-[12px] leading-relaxed text-[#565b64]">El envío se coordina por WhatsApp. Pago por transferencia, depósito o efectivo.</p>
+              <p class="text-[12px] leading-relaxed text-[#6f675f]">Envío calculado para todo México. Pago por transferencia, depósito o efectivo.</p>
+              <Link
+                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9] transition hover:bg-[#7a5440]"
+                to="/checkout"
+                onClick={onClose}
+              >
+                <Icon name="lock" class="h-[1.15em] w-[1.15em]" /> Finalizar compra
+              </Link>
               <button
-                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#203a6b] px-6 py-3 text-[13.5px] font-medium text-[#f7f6f1] transition hover:bg-[#16294d]"
+                class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
                 type="button"
                 onClick={onCheckout}
               >
                 <Icon name="whatsapp" class="h-[1.15em] w-[1.15em]" /> Pedir por WhatsApp
               </button>
-              <button
-                class="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#14171c]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#14171c]"
-                type="button"
-                onClick={onClose}
-              >
+              <Link class="block text-center text-[11.5px] text-[#6f675f] underline underline-offset-4 transition hover:text-[#3f3a34]" to="/" onClick={onClose}>
                 Seguir explorando
-              </button>
+              </Link>
             </div>
           )}
         </div>
@@ -427,10 +563,10 @@ function CartDrawer({
 function MenuSheet({ open, onClose, whatsapp, instagram }: { open: boolean; onClose: () => void; whatsapp: string; instagram: string }) {
   if (!open) return null;
   return (
-    <div class="fixed inset-0 z-50 flex flex-col bg-[#f2f1ec] text-[#14171c]" role="dialog" aria-modal="true" aria-label="Menú">
-      <div class="flex items-center justify-between border-b border-[#14171c]/15 px-5 py-5 sm:px-6">
+    <div class="fixed inset-0 z-50 flex flex-col bg-[#f7f1e9] text-[#3f3a34]" role="dialog" aria-modal="true" aria-label="Menú">
+      <div class="flex items-center justify-between border-b border-[#3f3a34]/15 px-5 py-5 sm:px-6">
         <Brand />
-        <button class="grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15" type="button" onClick={onClose} aria-label="Cerrar menú">
+        <button class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15" type="button" onClick={onClose} aria-label="Cerrar menú">
           <Icon name="x" />
         </button>
       </div>
@@ -441,19 +577,19 @@ function MenuSheet({ open, onClose, whatsapp, instagram }: { open: boolean; onCl
           ["#como-comprar", "Cómo comprar"],
           ["#contacto", "Contacto"]
         ].map(([href, label]) => (
-          <a class="border-b border-[#14171c]/15 py-5 text-[34px] font-semibold leading-none tracking-[-0.02em] transition hover:text-[#203a6b]" style={DISPLAY_FONT} href={href} onClick={onClose} key={href}>
+          <a class="border-b border-[#3f3a34]/15 py-5 text-[34px] font-semibold leading-none tracking-[-0.02em] transition hover:text-[#96684f]" style={DISPLAY_FONT} href={href} onClick={onClose} key={href}>
             {label}
           </a>
         ))}
       </nav>
-      <div class="flex flex-col items-start gap-4 border-t border-[#14171c]/15 px-5 py-6 sm:px-6">
-        <a class="inline-flex items-center justify-center rounded-full bg-[#203a6b] px-6 py-3 text-[13.5px] font-medium text-[#f7f6f1]" href="#coleccion" onClick={onClose}>
+      <div class="flex flex-col items-start gap-4 border-t border-[#3f3a34]/15 px-5 py-6 sm:px-6">
+        <a class="inline-flex items-center justify-center rounded-full bg-[#96684f] px-6 py-3 text-[13.5px] font-medium text-[#fffdf9]" href="#coleccion" onClick={onClose}>
           Ver la colección
         </a>
-        <a class="inline-flex items-center gap-2 text-[13px] text-[#565b64] transition hover:text-[#14171c]" href={buildWhatsappUrl(whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">
+        <a class="inline-flex items-center gap-2 text-[13px] text-[#6f675f] transition hover:text-[#3f3a34]" href={buildWhatsappUrl(whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">
           <Icon name="whatsapp" /> WhatsApp {formatPhone(whatsapp)}
         </a>
-        <a class="inline-flex items-center gap-2 text-[13px] text-[#565b64] transition hover:text-[#14171c]" href={`https://www.instagram.com/${instagram}/`} target="_blank" rel="noopener">
+        <a class="inline-flex items-center gap-2 text-[13px] text-[#6f675f] transition hover:text-[#3f3a34]" href={`https://www.instagram.com/${instagram}/`} target="_blank" rel="noopener">
           <Icon name="instagram" /> @{instagram}
         </a>
       </div>
@@ -468,8 +604,13 @@ export function Shop() {
   const products: Product[] = productsQuery ?? [];
   const productsLoaded = productsQuery !== undefined;
   const settings: SiteSettings = { ...DEFAULT_SETTINGS, ...(settingsQuery ?? {}) };
+  const applyPromotion = client.useAction("applyPromotion");
 
   const [cart, setCart] = useState<CartLine[]>(readCart);
+  const [promotion, setPromotion] = useState<AppliedPromotion | null>(readPromo);
+  const [promoCode, setPromoCode] = useState(() => readPromo()?.code ?? "");
+  const [promoError, setPromoError] = useState("");
+  const [applyingPromo, setApplyingPromo] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [quickId, setQuickId] = useState<string | null>(null);
@@ -482,11 +623,7 @@ export function Shop() {
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    } catch {
-      /* storage can be unavailable */
-    }
+    writeCart(cart);
   }, [cart]);
 
   useEffect(() => {
@@ -553,6 +690,63 @@ export function Shop() {
     if (product) showToast(`Quitaste ${product.name}.`);
   }
 
+  function adjustCartQty(id: string, delta: number) {
+    const line = cart.find((item) => item.id === id);
+    if (!line) return;
+    if (line.qty + delta <= 0) {
+      removeFromCart(id);
+      return;
+    }
+    changeQty(id, delta);
+  }
+
+  async function onApplyPromo(event: SubmitEvent) {
+    event.preventDefault();
+    if (applyingPromo) return;
+    const code = promoCode.trim();
+    setPromoError("");
+
+    if (!code) {
+      setPromotion(null);
+      writePromo(null);
+      return;
+    }
+
+    setApplyingPromo(true);
+    try {
+      const result = await applyPromotion(code);
+      if (!result.ok) {
+        setPromotion(null);
+        writePromo(null);
+        setPromoError(result.error ?? "Código no válido.");
+        return;
+      }
+      if (cartTotal < result.promotion.minSubtotal) {
+        setPromotion(null);
+        writePromo(null);
+        setPromoError(`Este código aplica desde ${formatMoney(result.promotion.minSubtotal)}.`);
+        return;
+      }
+      setPromotion(result.promotion);
+      setPromoCode(result.promotion.code);
+      writePromo(result.promotion);
+      showToast(`Código ${result.promotion.code} aplicado.`);
+    } catch {
+      setPromotion(null);
+      writePromo(null);
+      setPromoError("No pudimos validar el código.");
+    } finally {
+      setApplyingPromo(false);
+    }
+  }
+
+  function removePromo() {
+    setPromotion(null);
+    setPromoCode("");
+    setPromoError("");
+    writePromo(null);
+  }
+
   const featured = products.filter((product) => product.featured);
   const heroProducts = (featured.length >= 3 ? featured : [...featured, ...products.filter((product) => !product.featured)]).slice(0, 3);
 
@@ -575,6 +769,21 @@ export function Shop() {
     const product = products.find((item) => item.id === line.id);
     return sum + (product ? product.price * line.qty : 0);
   }, 0);
+  const discount = promotion && cartTotal >= promotion.minSubtotal ? discountFor(cartTotal, promotion) : 0;
+  const netSubtotal = cartTotal - discount;
+  const { freeFrom: shippingFreeFrom } = parseShipping(settings);
+  const shippingCost = shippingCostFor(netSubtotal, settings);
+  const orderTotal = netSubtotal + shippingCost;
+
+  useEffect(() => {
+    if (!promotion || !productsLoaded) return;
+    if (cartTotal < promotion.minSubtotal) {
+      setPromotion(null);
+      setPromoCode("");
+      writePromo(null);
+      setPromoError(`El código ${promotion.code} aplica desde ${formatMoney(promotion.minSubtotal)}.`);
+    }
+  }, [promotion, cartTotal, productsLoaded]);
 
   function checkout() {
     const lines = cart
@@ -584,38 +793,53 @@ export function Shop() {
       })
       .filter(Boolean);
     if (lines.length === 0) return;
-    const message = ["Hola, quiero pedir:", "", ...lines, "", `Subtotal: ${formatMoney(cartTotal)} MXN`, "", "¿Me ayudan a coordinar el envío?"].join("\n");
+    const shippingLine = shippingCost === 0 ? "Gratis" : `${formatMoney(shippingCost)} MXN`;
+    const discountLine = discount > 0 && promotion
+      ? `Descuento (${promotion.code}): -${formatMoney(discount)} MXN`
+      : "";
+    const message = [
+      "Hola, quiero pedir:",
+      "",
+      ...lines,
+      "",
+      `Subtotal: ${formatMoney(cartTotal)} MXN`,
+      ...(discountLine ? [discountLine] : []),
+      `Envío: ${shippingLine}`,
+      `Total: ${formatMoney(orderTotal)} MXN`,
+      "",
+      "¿Me ayudan a coordinar el envío?"
+    ].join("\n");
     window.open(buildWhatsappUrl(settings.whatsapp, message), "_blank", "noopener");
   }
 
   return (
-    <div style={SANS_FONT} class="min-h-screen bg-[#f2f1ec] text-[#14171c]">
-      <div class="bg-[#111419] text-[#f2f0ea]">
+    <div style={SANS_FONT} class="min-h-screen bg-[#fbf9f6] text-[#3f3a34]">
+      <div class="bg-[#403b35] text-[#fbf8f3]">
         <div class="mx-auto flex h-9 w-full max-w-[1320px] items-center justify-center gap-4 px-5 text-[10px] uppercase tracking-[0.16em] sm:gap-8 sm:px-7 lg:px-9">
           <span>Oro de 10 kt</span>
-          <span class="h-3 w-px bg-[#f2f0ea]/25" aria-hidden="true" />
+          <span class="h-3 w-px bg-[#fbf8f3]/25" aria-hidden="true" />
           <span>{settings.shippingNote}</span>
-          <span class="hidden h-3 w-px bg-[#f2f0ea]/25 sm:block" aria-hidden="true" />
+          <span class="hidden h-3 w-px bg-[#fbf8f3]/25 sm:block" aria-hidden="true" />
           <span class="hidden sm:inline">Pedidos por WhatsApp</span>
         </div>
       </div>
 
-      <header class="sticky top-0 z-40 border-b border-[#14171c]/15 bg-[#f2f1ec]/90 backdrop-blur-md">
+      <header class="sticky top-0 z-40 border-b border-[#3f3a34]/15 bg-[#fbf9f6]/95 backdrop-blur-md">
         <div class="relative mx-auto flex h-[72px] w-full max-w-[1320px] items-center gap-3 px-5 sm:px-7 lg:px-9">
-          <button class="grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15 lg:hidden" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú">
+          <button class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 lg:hidden" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú">
             <Icon name="menu" />
           </button>
           <Link to="/" class="no-underline" aria-label="Joyería Fina, inicio">
             <Brand />
           </Link>
           <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[13px] font-medium tracking-[0.02em] lg:flex" aria-label="Navegación principal">
-            <a class="text-[#565b64] transition hover:text-[#14171c]" href="#coleccion">Colección</a>
-            <a class="text-[#565b64] transition hover:text-[#14171c]" href="#favoritos">Favoritos</a>
-            <a class="text-[#565b64] transition hover:text-[#14171c]" href="#como-comprar">Cómo comprar</a>
+            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#coleccion">Colección</a>
+            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#favoritos">Favoritos</a>
+            <a class="text-[#6f675f] transition hover:text-[#3f3a34]" href="#como-comprar">Cómo comprar</a>
           </nav>
           <div class="ml-auto flex items-center gap-1 sm:gap-2">
             <a
-              class="grid h-10 w-10 place-items-center rounded-full border border-[#14171c]/15 transition hover:border-[#14171c]"
+              class="grid h-10 w-10 place-items-center rounded-full border border-[#3f3a34]/15 transition hover:border-[#3f3a34]"
               href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
               target="_blank"
               rel="noopener"
@@ -624,14 +848,14 @@ export function Shop() {
               <Icon name="whatsapp" />
             </a>
             <button
-              class="ml-1 inline-flex h-10 items-center gap-2 rounded-full border border-[#14171c]/15 px-2.5 text-[12px] font-medium transition hover:border-[#14171c] active:scale-[0.97] sm:px-4"
+              class="ml-1 inline-flex h-10 items-center gap-2 rounded-full border border-[#3f3a34]/15 px-2.5 text-[12px] font-medium transition hover:border-[#3f3a34] active:scale-[0.97] sm:px-4"
               type="button"
               onClick={() => setCartOpen(true)}
               aria-label={`Abrir tu selección, ${cartCount} piezas`}
             >
               <Icon name="bag" />
               <span class="hidden sm:inline">Selección</span>
-              <span class="grid h-5 min-w-5 place-items-center rounded-full bg-[#203a6b] px-1 text-[10px] font-semibold text-[#f7f6f1]">{cartCount}</span>
+              <span class="grid h-5 min-w-5 place-items-center rounded-full bg-[#96684f] px-1 text-[10px] font-semibold text-[#fffdf9]">{cartCount}</span>
             </button>
           </div>
         </div>
@@ -644,20 +868,20 @@ export function Shop() {
         <section class="py-16 sm:py-20 lg:py-28" id="coleccion" aria-labelledby="collection-title">
           <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
             <div class="max-w-[640px]">
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT} id="collection-title">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="collection-title">
                 La colección
               </h2>
-              <p class="mt-3 text-[15px] leading-relaxed text-[#565b64]">
+              <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">
                 {productsLoaded ? `${products.length} broqueles en oro de 10 kt.` : "Broqueles en oro de 10 kt."} Elige tu favorito y escríbenos para coordinar el envío.
               </p>
             </div>
 
-            <div class="mt-10 flex flex-col gap-5 border-b border-[#14171c]/15 pb-5 lg:flex-row lg:items-center lg:justify-between">
-              <div class="flex items-center gap-2 border-b border-[#14171c]/15 pb-2 lg:w-[280px]">
-                <Icon name="search" class="h-4 w-4 text-[#565b64]" />
+            <div class="mt-10 flex flex-col gap-5 border-b border-[#3f3a34]/15 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div class="flex items-center gap-2 border-b border-[#3f3a34]/15 pb-2 lg:w-[280px]">
+                <Icon name="search" class="h-4 w-4 text-[#6f675f]" />
                 <label class="sr-only" for="search">Buscar una pieza</label>
                 <input
-                  class="w-full bg-transparent py-1 text-[14px] outline-none placeholder:text-[#565b64]/80"
+                  class="w-full bg-transparent py-1 text-[14px] outline-none placeholder:text-[#6f675f]/80"
                   id="search"
                   type="search"
                   placeholder="Buscar por nombre o forma"
@@ -675,8 +899,8 @@ export function Shop() {
                   <button
                     class={`whitespace-nowrap rounded-full border px-3.5 py-2 text-[12px] font-medium tracking-[0.02em] transition active:scale-[0.97] ${
                       collection === item.id
-                        ? "border-[#14171c] bg-[#14171c] text-[#f2f1ec]"
-                        : "border-[#14171c]/15 text-[#565b64] hover:border-[#14171c] hover:text-[#14171c]"
+                        ? "border-[#3f3a34] bg-[#3f3a34] text-[#f7f1e9]"
+                        : "border-[#3f3a34]/15 text-[#6f675f] hover:border-[#3f3a34] hover:text-[#3f3a34]"
                     }`}
                     type="button"
                     aria-pressed={collection === item.id}
@@ -691,10 +915,10 @@ export function Shop() {
                 ))}
               </div>
 
-              <div class="relative flex items-center gap-2 text-[13px] text-[#565b64]">
+              <div class="relative flex items-center gap-2 text-[13px] text-[#6f675f]">
                 <label class="sr-only" for="sort">Ordenar por</label>
                 <select
-                  class="appearance-none bg-transparent py-2 pr-6 text-[13px] text-[#14171c] outline-none"
+                  class="appearance-none bg-transparent py-2 pr-6 text-[13px] text-[#3f3a34] outline-none"
                   id="sort"
                   value={sort}
                   onChange={(event) => {
@@ -711,27 +935,27 @@ export function Shop() {
               </div>
             </div>
 
-            <p class="mt-4 text-[12px] tracking-[0.02em] text-[#565b64]" aria-live="polite">
+            <p class="mt-4 text-[12px] tracking-[0.02em] text-[#6f675f]" aria-live="polite">
               {!productsLoaded ? "" : filtered.length === 0 ? "0 piezas" : shown.length === filtered.length ? `${filtered.length} piezas` : `Mostrando ${shown.length} de ${filtered.length} piezas`}
             </p>
 
             {!productsLoaded ? (
               <div class="mt-6 min-h-[240px]" aria-hidden="true" />
             ) : shown.length === 0 ? (
-              <div class="mt-6 flex flex-col items-start gap-4 border border-[#14171c]/15 bg-[#e8e7e1]/50 px-6 py-12">
+              <div class="mt-6 flex flex-col items-start gap-4 border border-[#3f3a34]/15 bg-[#f0e6db]/50 px-6 py-12">
                 <p class="text-[32px] font-semibold leading-none" style={DISPLAY_FONT}>
                   {products.length === 0 ? "El catálogo está vacío." : "No encontramos esa pieza."}
                 </p>
-                <p class="max-w-[42ch] text-[14px] leading-relaxed text-[#565b64]">
+                <p class="max-w-[42ch] text-[14px] leading-relaxed text-[#6f675f]">
                   {products.length === 0 ? "Entra al panel para agregar la primera pieza." : "Prueba con otra palabra o vuelve a ver toda la colección."}
                 </p>
                 {products.length === 0 ? (
-                  <Link class="inline-flex items-center justify-center rounded-full border border-[#14171c]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#14171c]" to="/admin">
+                  <Link class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]" to="/admin">
                     Abrir panel
                   </Link>
                 ) : (
                   <button
-                    class="inline-flex items-center justify-center rounded-full border border-[#14171c]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#14171c]"
+                    class="inline-flex items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
                     type="button"
                     onClick={() => {
                       setCollection("todos");
@@ -749,11 +973,13 @@ export function Shop() {
                 {shown.map((product) => (
                   <ProductCard
                     product={product}
+                    qty={cart.find((line) => line.id === product.id)?.qty ?? 0}
                     onQuick={(id) => {
                       setQuickId(id);
                       setQuickQty(1);
                     }}
                     onAdd={(id) => addToCart(id)}
+                    onQty={adjustCartQty}
                     key={product.id}
                   />
                 ))}
@@ -763,7 +989,7 @@ export function Shop() {
             {shown.length < filtered.length ? (
               <div class="mt-12 flex justify-center">
                 <button
-                  class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#14171c]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#14171c]"
+                  class="inline-flex min-h-11 items-center justify-center rounded-full border border-[#3f3a34]/15 px-6 py-3 text-[13.5px] font-medium transition hover:border-[#3f3a34]"
                   type="button"
                   onClick={() => setVisible((value) => value + PAGE_SIZE)}
                 >
@@ -775,19 +1001,19 @@ export function Shop() {
         </section>
 
         {heroProducts.length > 0 ? (
-          <section class="border-y border-[#14171c]/15 bg-[#e8e7e1] py-16 sm:py-20 lg:py-24" id="favoritos" aria-labelledby="featured-title">
+          <section class="border-y border-[#3f3a34]/15 bg-[#f0e6db] py-16 sm:py-20 lg:py-24" id="favoritos" aria-labelledby="featured-title">
             <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
               <div class="max-w-[620px]">
-                <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT} id="featured-title">
+                <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="featured-title">
                   Favoritos de la casa
                 </h2>
-                <p class="mt-3 text-[15px] leading-relaxed text-[#565b64]">Tres piezas que combinan con todo, solas o en capas.</p>
+                <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">Tres piezas que combinan con todo, solas o en capas.</p>
               </div>
 
               <div class="mt-10 grid gap-4 lg:grid-cols-[1.18fr_.82fr] lg:gap-6">
                 {heroProducts[0] ? (
                   <button class="group block w-full text-left" type="button" onClick={() => { setQuickId(heroProducts[0].id); setQuickQty(1); }} aria-label={`Ver ${heroProducts[0].name}`}>
-                    <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#faf9f5]">
+                    <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#fffdfb]">
                       <ProductImage src={heroProducts[0].imageUrl} alt={heroProducts[0].name} class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
                     </span>
                     <span class="mt-3 flex items-baseline justify-between gap-4">
@@ -806,7 +1032,7 @@ export function Shop() {
                       aria-label={`Ver ${product.name}`}
                       key={product.id}
                     >
-                      <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#faf9f5] sm:h-full sm:aspect-auto">
+                      <span class="block aspect-[7/8] overflow-hidden rounded-[2px] bg-[#fffdfb] sm:h-full sm:aspect-auto">
                         <ProductImage src={product.imageUrl} alt={product.name} class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
                       </span>
                       <span class="flex flex-col justify-center gap-1">
@@ -819,7 +1045,7 @@ export function Shop() {
               </div>
 
               <div class="mt-8">
-                <a class="inline-flex items-center gap-2 text-[13px] font-medium tracking-[0.02em] text-[#14171c] underline-offset-4 transition hover:text-[#203a6b] hover:underline" href="#coleccion">
+                <a class="inline-flex items-center gap-2 text-[13px] font-medium tracking-[0.02em] text-[#3f3a34] underline-offset-4 transition hover:text-[#96684f] hover:underline" href="#coleccion">
                   Ver toda la colección
                   <Icon name="arrow" class="h-[1.15em] w-[1.15em]" />
                 </a>
@@ -830,7 +1056,7 @@ export function Shop() {
 
         <section class="py-16 sm:py-24 lg:py-28" aria-labelledby="story-title">
           <div class="mx-auto grid w-full max-w-[1320px] items-center gap-10 px-5 sm:px-7 lg:grid-cols-[.85fr_1.15fr] lg:gap-20 lg:px-9">
-            <figure class="overflow-hidden rounded-[2px] border border-[#14171c]/10 bg-[#e8e7e1]">
+            <figure class="overflow-hidden rounded-[2px] border border-[#3f3a34]/10 bg-[#f0e6db]">
               {settings.storyImageUrl || products[1]?.imageUrl ? (
                 <ProductImage
                   src={settings.storyImageUrl || products[1]?.imageUrl || ""}
@@ -838,44 +1064,44 @@ export function Shop() {
                   class="aspect-[4/5] h-full w-full object-cover object-[50%_45%]"
                 />
               ) : (
-                <span class="grid aspect-[4/5] w-full place-items-center text-[#565b64]"><Icon name="image" class="h-10 w-10 opacity-30" /></span>
+                <span class="grid aspect-[4/5] w-full place-items-center text-[#6f675f]"><Icon name="image" class="h-10 w-10 opacity-30" /></span>
               )}
             </figure>
             <div>
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT} id="story-title">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="story-title">
                 Oro de 10 kt, todos los días.
               </h2>
-              <p class="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-[#565b64]">
+              <p class="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-[#6f675f]">
                 Los broqueles de la colección están hechos en oro de 10 kt. Son ligeros, brillantes y fáciles de combinar entre sí.
               </p>
-              <p class="mt-4 max-w-[54ch] text-[15.5px] leading-relaxed text-[#565b64]">
+              <p class="mt-4 max-w-[54ch] text-[15.5px] leading-relaxed text-[#6f675f]">
                 Úsalos solos para un detalle discreto o reúne varios en la misma oreja. No hay una forma correcta.
               </p>
-              <ul class="mt-8 grid grid-cols-3 gap-4 border-t border-[#14171c]/15 pt-6">
+              <ul class="mt-8 grid grid-cols-3 gap-4 border-t border-[#3f3a34]/15 pt-6">
                 <li class="flex flex-col gap-1">
                   <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>10 kt</span>
-                  <span class="text-[11.5px] text-[#565b64]">Pureza del oro</span>
+                  <span class="text-[11.5px] text-[#6f675f]">Pureza del oro</span>
                 </li>
                 <li class="flex flex-col gap-1">
                   <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>Par</span>
-                  <span class="text-[11.5px] text-[#565b64]">Se vende por par</span>
+                  <span class="text-[11.5px] text-[#6f675f]">Se vende por par</span>
                 </li>
                 <li class="flex flex-col gap-1">
                   <span class="text-[30px] font-semibold leading-none" style={DISPLAY_FONT}>MX</span>
-                  <span class="text-[11.5px] text-[#565b64]">Envíos a todo el país</span>
+                  <span class="text-[11.5px] text-[#6f675f]">Envíos a todo el país</span>
                 </li>
               </ul>
             </div>
           </div>
         </section>
 
-        <section class="border-t border-[#14171c]/15 bg-[#f2f1ec] py-16 sm:py-20 lg:py-24" id="como-comprar" aria-labelledby="how-title">
+        <section class="border-t border-[#3f3a34]/15 bg-[#f7f1e9] py-16 sm:py-20 lg:py-24" id="como-comprar" aria-labelledby="how-title">
           <div class="mx-auto w-full max-w-[1320px] px-5 sm:px-7 lg:px-9">
             <div class="max-w-[600px]">
-              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT} id="how-title">
+              <h2 class="text-[clamp(2.4rem,4.4vw,3.8rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="how-title">
                 Cómo comprar
               </h2>
-              <p class="mt-3 text-[15px] leading-relaxed text-[#565b64]">Sin cuentas ni formularios. Elegimos contigo y coordinamos todo por WhatsApp.</p>
+              <p class="mt-3 text-[15px] leading-relaxed text-[#6f675f]">Sin cuentas ni formularios. Elegimos contigo y coordinamos todo por WhatsApp.</p>
             </div>
             <div class="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-6">
               {[
@@ -883,15 +1109,15 @@ export function Shop() {
                 ["Escríbenos", "Mándanos tu selección por WhatsApp. Te confirmamos disponibilidad y envío."],
                 ["Recibe", "Coordinamos el pago por transferencia, depósito o efectivo y enviamos a todo México."]
               ].map(([title, copy]) => (
-                <article class="border-t border-[#14171c]/30 pt-5" key={title}>
+                <article class="border-t border-[#3f3a34]/30 pt-5" key={title}>
                   <h3 class="text-[32px] font-semibold leading-none" style={DISPLAY_FONT}>{title}</h3>
-                  <p class="mt-3 max-w-[32ch] text-[14.5px] leading-relaxed text-[#565b64]">{copy}</p>
+                  <p class="mt-3 max-w-[32ch] text-[14.5px] leading-relaxed text-[#6f675f]">{copy}</p>
                 </article>
               ))}
             </div>
-            <p class="mt-10 text-[14px] text-[#565b64]">
+            <p class="mt-10 text-[14px] text-[#6f675f]">
               Pedidos por WhatsApp al{" "}
-              <a class="font-medium text-[#14171c] underline underline-offset-4 hover:text-[#203a6b]" href={buildWhatsappUrl(settings.whatsapp, "Hola, quiero hacer un pedido.")} target="_blank" rel="noopener">
+              <a class="font-medium text-[#3f3a34] underline underline-offset-4 hover:text-[#96684f]" href={buildWhatsappUrl(settings.whatsapp, "Hola, quiero hacer un pedido.")} target="_blank" rel="noopener">
                 {formatPhone(settings.whatsapp)}
               </a>
               .
@@ -899,24 +1125,24 @@ export function Shop() {
           </div>
         </section>
 
-        <section class="bg-[#111419] text-[#f2f0ea]" id="contacto" aria-labelledby="contact-title">
+        <section class="bg-[#403b35] text-[#fbf8f3]" id="contacto" aria-labelledby="contact-title">
           <div class="mx-auto grid w-full max-w-[1320px] gap-8 px-5 py-14 sm:px-7 sm:py-16 lg:grid-cols-[1.25fr_.75fr] lg:items-end lg:gap-16 lg:px-9 lg:py-20">
             <div>
-              <h2 class="text-[clamp(2.4rem,4.6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.02em]" style={DISPLAY_FONT} id="contact-title">
+              <h2 class="text-[clamp(2.4rem,4.6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-[#a67f6c]" style={DISPLAY_FONT} id="contact-title">
                 ¿Te ayudamos a elegir?
               </h2>
-              <p class="mt-3 max-w-[48ch] text-[15px] leading-relaxed text-[#f2f0ea]/70">Escríbenos y te compartimos disponibilidad, medidas y opciones de envío.</p>
+              <p class="mt-3 max-w-[48ch] text-[15px] leading-relaxed text-[#fbf8f3]/70">Escríbenos y te compartimos disponibilidad, medidas y opciones de envío.</p>
             </div>
             <div class="flex flex-col items-start gap-4 lg:items-end">
               <a
-                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f2f1ec] px-6 py-3 text-[13.5px] font-medium text-[#14171c] transition hover:bg-white"
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f7f1e9] px-6 py-3 text-[13.5px] font-medium text-[#3f3a34] transition hover:bg-[#fffdfb]"
                 href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")}
                 target="_blank"
                 rel="noopener"
               >
                 <Icon name="whatsapp" /> Escríbenos por WhatsApp
               </a>
-              <a class="inline-flex items-center gap-2 text-[13px] text-[#f2f0ea]/70 transition hover:text-[#f2f0ea]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
+              <a class="inline-flex items-center gap-2 text-[13px] text-[#fbf8f3]/70 transition hover:text-[#fbf8f3]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">
                 <Icon name="instagram" /> @{settings.instagram}
               </a>
             </div>
@@ -924,41 +1150,41 @@ export function Shop() {
         </section>
       </main>
 
-      <footer class="border-t border-[#f2f0ea]/10 bg-[#111419] text-[#f2f0ea]">
+      <footer class="border-t border-[#fbf8f3]/10 bg-[#403b35] text-[#fbf8f3]">
         <div class="mx-auto grid w-full max-w-[1320px] gap-10 px-5 py-14 sm:grid-cols-2 sm:px-7 lg:grid-cols-[1.5fr_.7fr_1fr_1fr] lg:px-9 lg:py-16">
           <div>
             <a href="#top" class="inline-flex items-center gap-2.5 no-underline" aria-label="Joyería Fina, inicio">
-              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#f2f0ea]/60 text-[15px] font-semibold leading-none tracking-[0.04em]" style={DISPLAY_FONT} aria-hidden="true">JF</span>
+              <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#fbf8f3]/60 text-[15px] font-semibold leading-none tracking-[0.04em]" style={DISPLAY_FONT} aria-hidden="true">JF</span>
               <span class="text-[24px] font-semibold leading-none tracking-[-0.01em]" style={DISPLAY_FONT}>Joyería Fina</span>
             </a>
-            <p class="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-[#f2f0ea]/60">Broqueles de oro de 10 kt. Una selección de joyería fina para todos los días.</p>
+            <p class="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-[#fbf8f3]/60">Broqueles de oro de 10 kt. Una selección de joyería fina para todos los días.</p>
           </div>
           <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#f2f0ea]/45">Tienda</h3>
+            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Tienda</h3>
             <div class="mt-4 flex flex-col items-start">
-              <a class="block py-1 text-[13.5px] text-[#f2f0ea]/75 transition hover:text-[#f2f0ea]" href="#coleccion">Colección</a>
-              <a class="block py-1 text-[13.5px] text-[#f2f0ea]/75 transition hover:text-[#f2f0ea]" href="#favoritos">Favoritos</a>
-              <a class="block py-1 text-[13.5px] text-[#f2f0ea]/75 transition hover:text-[#f2f0ea]" href="#como-comprar">Cómo comprar</a>
+              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#coleccion">Colección</a>
+              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#favoritos">Favoritos</a>
+              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href="#como-comprar">Cómo comprar</a>
             </div>
           </div>
           <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#f2f0ea]/45">Contacto</h3>
+            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Contacto</h3>
             <div class="mt-4 flex flex-col items-start">
-              <a class="block py-1 text-[13.5px] text-[#f2f0ea]/75 transition hover:text-[#f2f0ea]" href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">WhatsApp {formatPhone(settings.whatsapp)}</a>
-              <a class="block py-1 text-[13.5px] text-[#f2f0ea]/75 transition hover:text-[#f2f0ea]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">@{settings.instagram}</a>
+              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href={buildWhatsappUrl(settings.whatsapp, "Hola, me gustaría saber más de la colección.")} target="_blank" rel="noopener">WhatsApp {formatPhone(settings.whatsapp)}</a>
+              <a class="block py-1 text-[13.5px] text-[#fbf8f3]/75 transition hover:text-[#fbf8f3]" href={`https://www.instagram.com/${settings.instagram}/`} target="_blank" rel="noopener">@{settings.instagram}</a>
             </div>
           </div>
           <div>
-            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#f2f0ea]/45">Pagos y envíos</h3>
-            <p class="mt-4 text-[13px] leading-relaxed text-[#f2f0ea]/60">{settings.paymentNote}</p>
-            <p class="mt-2 text-[13px] leading-relaxed text-[#f2f0ea]/60">{settings.shippingNote}</p>
+            <h3 class="text-[11px] uppercase tracking-[0.16em] text-[#fbf8f3]/45">Pagos y envíos</h3>
+            <p class="mt-4 text-[13px] leading-relaxed text-[#fbf8f3]/60">{settings.paymentNote}</p>
+            <p class="mt-2 text-[13px] leading-relaxed text-[#fbf8f3]/60">{settings.shippingNote}</p>
           </div>
         </div>
-        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-2 border-t border-[#f2f0ea]/10 px-5 py-6 text-[11px] text-[#f2f0ea]/45 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
+        <div class="mx-auto flex w-full max-w-[1320px] flex-col gap-2 border-t border-[#fbf8f3]/10 px-5 py-6 text-[11px] text-[#fbf8f3]/45 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-9">
           <span>© 2026 Joyería Fina</span>
           <span class="inline-flex items-center gap-3">
             <span>Oro de 10 kt · Hecho para brillar</span>
-            <Link class="text-[#f2f0ea]/45 underline-offset-4 transition hover:text-[#f2f0ea] hover:underline" to="/admin">Administrar</Link>
+            <Link class="text-[#fbf8f3]/45 underline-offset-4 transition hover:text-[#fbf8f3] hover:underline" to="/admin">Administrar</Link>
           </span>
         </div>
       </footer>
@@ -972,6 +1198,23 @@ export function Shop() {
         onRemove={removeFromCart}
         onCheckout={checkout}
         whatsapp={settings.whatsapp}
+        shipping={shippingCost}
+        freeFrom={shippingFreeFrom}
+        discount={discount}
+        promotion={promotion}
+        promoCode={promoCode}
+        promoError={promoError}
+        applyingPromo={applyingPromo}
+        onPromoCodeChange={(value) => {
+          setPromoCode(value);
+          setPromoError("");
+          if (promotion) {
+            setPromotion(null);
+            writePromo(null);
+          }
+        }}
+        onApplyPromo={onApplyPromo}
+        onRemovePromo={removePromo}
       />
 
       <QuickView

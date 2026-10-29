@@ -7,6 +7,7 @@ Storefront y panel de administración para 54 broqueles de oro de 10 kt. Corre c
 - **URL:** https://frosted-signal-808252a92b.lakebed.app
 - **Deploy:** `dep_YpfCKyDZHsnha-M5` (reclamado, no expira)
 - **Panel:** abre la tienda y usa **Administrar** en el pie.
+- **Checkout:** selección → **Finalizar compra** (pago simulado con tarjeta, PayPal o transferencia, códigos de descuento).
 - **Deploy ID en el repo:** [lakebed.json](lakebed.json).
 
 La ruta `/admin` vive en el router del cliente. Recargar esa URL directo responde 404, también en el deploy; entra siempre desde el enlace del pie.
