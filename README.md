@@ -2,6 +2,39 @@
 
 Storefront y panel de administración para 54 broqueles de oro de 10 kt. Corre como un capsule de Lakebed: Preact, Tailwind, base de datos, storage y hosting incluidos.
 
+## App publicada
+
+- **URL:** https://frosted-signal-808252a92b.lakebed.app
+- **Deploy:** `dep_YpfCKyDZHsnha-M5` (reclamado, no expira)
+- **Panel:** abre la tienda y usa **Administrar** en el pie.
+- **Deploy ID en el repo:** [lakebed.json](lakebed.json).
+
+La ruta `/admin` vive en el router del cliente. Recargar esa URL directo responde 404, también en el deploy; entra siempre desde el enlace del pie.
+
+Para publicar cambios:
+
+```sh
+npx --yes lakebed deploy
+```
+
+Guía completa de deploy, env, logs y dominios: [docs/deploy.md](docs/deploy.md).
+
+## Documentación
+
+- [docs/README.md](docs/README.md) — índice y mapa del repo.
+- [docs/deploy.md](docs/deploy.md) — publicar, logs, base de datos, dominios, apagar/restaurar.
+- [docs/catalog.md](docs/catalog.md) — productos, precios, colecciones, ajustes y contraseña.
+- [docs/images.md](docs/images.md) — agregar y reemplazar fotos, hero e historia.
+- [docs/troubleshooting.md](docs/troubleshooting.md) — errores comunes.
+
+## Actualizar fotos y catálogo
+
+**Un producto o una foto:** entra al panel, edita el producto y guarda. No hace falta deploy ni seed.
+
+**Todo el catálogo:** edita `shared/catalog.ts`, copia las fotos a `seed-assets/`, publica esa carpeta en un host estático y corre el seed con `--force`. Esto reemplaza productos y ajustes; los cambios hechos en el panel se pierden. Detalle paso a paso en [docs/images.md](docs/images.md) y [docs/catalog.md](docs/catalog.md).
+
+**Fotos en producción:** pega una URL pública en el campo **Imagen**. El botón de subida del panel no funciona en el deploy hosteado porque Lakebed exige un usuario con Google verificado y el panel no tiene ese login.
+
 ## Correr localmente
 
 Copia el ejemplo de variables y define una contraseña y un token:
@@ -26,8 +59,6 @@ El seed sube las fotos a Lakebed storage, crea los 54 productos y guarda los aju
 
 Tienda: `http://127.0.0.1:3000/`
 
-Panel: abre el enlace **Administrar** en el pie de la tienda. La ruta se sirve dentro del router del cliente. En el servidor local, recargar directamente `/admin` puede dar 404; navega desde la tienda. En un deploy hosteado la ruta se sirve como el resto de las rutas del cliente.
-
 ## Panel
 
 - Una sola contraseña, sin cuentas de usuario.
@@ -43,15 +74,14 @@ Cambia `ADMIN_PASSWORD` y `SEED_TOKEN` antes de desplegar. El archivo `.env.lake
 
 En local, el seed sube las fotos a Lakebed storage y guarda las URLs en la base de datos.
 
-En un deploy hosteado, Lakebed solo acepta subidas de un usuario de la app con Google verificado, no de las credenciales del desarrollador. Para mantener el panel con contraseña y evitar un login, publica `seed-assets/` en un host estático público y pásalo al seed:
+En un deploy hosteado, Lakebed solo acepta subidas de un usuario de la app con Google verificado, no de las credenciales del desarrollador ni del panel con contraseña. Para cargar el catálogo, publica `seed-assets/` en un host estático público y pásalo al seed:
 
 ```sh
-bun scripts/seed.ts --target=https://<tu-deploy>.lakebed.app --image-base=https://<host-publico>/seed-assets
+bun scripts/seed.ts --target=https://frosted-signal-808252a92b.lakebed.app \
+  --image-base=https://raw.githubusercontent.com/SergioJuniorCE/joyeria-fina/master/seed-assets
 ```
 
-Cualquier host estático sirve: GitHub raw, Cloudflare Pages, Vercel o un bucket público. Si el repo es público, GitHub raw es la opción más directa.
-
-La alternativa es subir cada imagen desde el panel con una sesión de Lakebed con Google. El panel acepta tanto una URL pública como una subida directa. En local la subida funciona sin cuenta; en producción el botón de subida pide esa sesión. El CRUD y la contraseña del panel no dependen de Google.
+Ese es el host que usa el catálogo actual. Requisitos: el repo `SergioJuniorCE/joyeria-fina` debe existir, ser público y tener las fotos en `seed-assets/` sobre la rama `master`. Si el repo no existe o es privado, las URLs dan 404 y la tienda muestra imágenes rotas. Cualquier otro host estático sirve igual (GitHub Pages, Cloudflare Pages, Vercel, bucket público). Más detalle en [docs/images.md](docs/images.md).
 
 ## Deploy
 
@@ -60,11 +90,7 @@ npx --yes lakebed auth login
 npx --yes lakebed deploy
 ```
 
-El primer comando crea o usa tu app propia en Lakebed. El deploy imprime la URL. Después publica `seed-assets/` en un host estático y carga el catálogo hosteado:
-
-```sh
-bun scripts/seed.ts --target=https://<tu-deploy>.lakebed.app --image-base=https://<host-publico>/seed-assets
-```
+El primer comando crea o usa tu app propia en Lakebed. El deploy imprime la URL y escribe `lakebed.json` con el `deployId`; commitea ese archivo para que otros checkouts actualicen el mismo deploy.
 
 Si haces un deploy anónimo primero:
 
@@ -74,7 +100,15 @@ npx --yes lakebed claim
 npx --yes lakebed deploy
 ```
 
-Las variables del servidor solo se sincronizan después de reclamar el deploy. Los deploys anónimos expiran; los reclamados no.
+Las variables del servidor solo se sincronizan después de reclamar el deploy, y la sincronización es por reemplazo. Los deploys anónimos expiran; los reclamados no.
+
+Verificación y operación:
+
+```sh
+npx --yes lakebed inspect dep_YpfCKyDZHsnha-M5
+npx --yes lakebed logs dep_YpfCKyDZHsnha-M5
+npx --yes lakebed db dump dep_YpfCKyDZHsnha-M5
+```
 
 ## Modelo de datos
 
@@ -84,4 +118,4 @@ Las variables del servidor solo se sincronizan después de reclamar el deploy. L
 
 ## Alcance actual de Lakebed
 
-Lakebed está en alpha pública. No incluye dominios personalizados y el plan es gratuito con límites de requests, mutations, filas y bytes. Para este catálogo de 54 productos es suficiente, pero no es una plataforma de producción a gran escala.
+Lakebed está en alpha pública. Incluye subdominios `*.lakebed.app` y no es una plataforma de producción a gran escala. El plan es gratuito con límites de requests, mutations, filas y bytes. Para este catálogo de 54 productos es suficiente. Revisa https://docs.lakebed.dev/limits/ antes de crecer.
